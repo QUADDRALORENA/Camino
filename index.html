@@ -269,6 +269,7 @@
   </div>
 
   <script>
+    // --------------------- CONFIG ---------------------
     const SHEET_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTE4TL2UpdsZM43opfqqdDH2gdW_tzoHd4z-_7vxb6koicdOJWt6r-SoFVR0FWaAEs8UmJJGirQ0h0S/pub?gid=0&single=true&output=csv';
     const PIPELINE_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQdqDsD7zwfjYT3BkEpLe_qBUPXjmPkOhkbJTM-VbGF71l94gijdOLIgQz9CkebfjnSobOPvZalst51/pub?gid=0&single=true&output=csv';
 
@@ -283,23 +284,212 @@
       document.getElementById(tab.dataset.target).classList.add('active');
     }));
 
-    async function carregarResumo() {
-      const resp = await fetch(SHEET_DATA_URL);
-      const csv = await resp.text();
-      const linhas = csv.split('\n').slice(1);
-      const contagem = { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 };
-      linhas.forEach(l => {
-        const cols = l.split(',');
-        const empresa = (cols[4] || '').toUpperCase();
-        diretorias.forEach(dir => { if(empresa.includes(dir)) contagem[dir]++; });
-      });
-      document.getElementById('totalStore').textContent = contagem['YUNY STORE'];
-      document.getElementById('totalParcerias').textContent = contagem['PARCERIAS'];
-      document.getElementById('totalSell').textContent = contagem['YUNY SELL'];
-      const ctx = document.getElementById('chartDiretoriaSemana').getContext('2d');
-      new Chart(ctx, { type:'pie', data:{ labels:diretorias, datasets:[{ data:Object.values(contagem), backgroundColor:Object.values(cores) }] } });
+    // --------------------- CSV PARSER SIMPLES (suporta aspas) ---------------------
+    function detectDelimiter(headerLine) {
+      if (!headerLine) return ',';
+      if (headerLine.includes(';') && !headerLine.includes(',;')) return ';';
+      if (headerLine.includes('	')) return '	';
+      return ',';
     }
+
+    function splitCSVLine(line, delimiter) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          // If double-quote and next is quote, treat as escaped quote
+          if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+          else inQuotes = !inQuotes;
+          continue;
+        }
+        if (ch === delimiter && !inQuotes) { result.push(cur); cur = ''; continue; }
+        cur += ch;
+      }
+      result.push(cur);
+      return result.map(s => s.trim());
+    }
+
+    function csvToJson(csv) {
+      if (!csv) return { data: [], headers: [] };
+      const lines = csv.replace(/
+/g, '').split('
+').filter(l => l.trim() !== '');
+      if (lines.length === 0) return { data: [], headers: [] };
+      const delimiter = detectDelimiter(lines[0]);
+      const rawHeaders = splitCSVLine(lines[0], delimiter).map(h => h.replace(/^"|"$/g, '').trim());
+      const normalized = rawHeaders.map(h => h.toUpperCase());
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        const row = splitCSVLine(lines[i], delimiter);
+        if (row.length === 1 && row[0] === '') continue;
+        const obj = {};
+        for (let j = 0; j < normalized.length; j++) {
+          obj[rawHeaders[j] || `COL${j}`] = (row[j] || '').replace(/^"|"$/g, '').trim();
+        }
+        data.push(obj);
+      }
+      return { data, headers: rawHeaders };
+    }
+
+    // --------------------- RESUMO / CONTROLE ---------------------
+    async function carregarResumo() {
+      try {
+        const resp = await fetch(SHEET_DATA_URL);
+        if (!resp.ok) throw new Error(`Falha ao buscar dados: ${resp.status}`);
+        const csv = await resp.text();
+        const { data, headers } = csvToJson(csv);
+
+        // Busca chave que corresponde à coluna que contém a empresa
+        const headerMap = headers.reduce((acc, h, i) => { acc[h.toUpperCase()] = h; return acc; }, {});
+        // Procura pelas colunas mais prováveis
+        const possibleEmpresa = ['EMPRESA','EMPRESA','COMPANY','COMPANY NAME','CONDOMINIO','EMPRESA'];
+        let empresaKey = null;
+        for (const k of Object.keys(headerMap)) {
+          if (['EMPRESA','EMPRESA','COMPANY','COMPANY NAME','COMPANYNAME','EMPRESA'].includes(k)) { empresaKey = headerMap[k]; break; }
+        }
+        // fallback para a 5ª coluna se não encontrar
+        if (!empresaKey && data.length && Object.keys(data[0])[4]) {
+          empresaKey = Object.keys(data[0])[4];
+        }
+
+        const counts = { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 };
+
+        data.forEach(row => {
+          const raw = (empresaKey && row[empresaKey]) ? row[empresaKey].toUpperCase() : '';
+          diretorias.forEach(dir => {
+            if (raw.includes(dir.replace(' ', '')) || raw.includes(dir)) counts[dir]++;
+          });
+        });
+
+        document.getElementById('totalStore').textContent = counts['YUNY STORE'];
+        document.getElementById('totalParcerias').textContent = counts['PARCERIAS'];
+        document.getElementById('totalSell').textContent = counts['YUNY SELL'];
+
+        // Atualiza controle de atendimentos (mesmos ids)
+        document.getElementById('contStore').textContent = counts['YUNY STORE'];
+        document.getElementById('contParcerias').textContent = counts['PARCERIAS'];
+        document.getElementById('contSell').textContent = counts['YUNY SELL'];
+
+        // Gera gráfico de pizza
+        const ctx = document.getElementById('chartDiretoriaSemana').getContext('2d');
+        if (window._chartDiretoria) window._chartDiretoria.destroy();
+        window._chartDiretoria = new Chart(ctx, { type:'pie', data:{ labels:['Yuny Store','Parcerias','Yuny Sell'], datasets:[{ data:[counts['YUNY STORE'], counts['PARCERIAS'], counts['YUNY SELL']], backgroundColor:[cores['YUNY STORE'], cores['PARCERIAS'], cores['YUNY SELL']] }] }, options:{ responsive:true } });
+
+      } catch (err) {
+        console.error('Erro carregarResumo:', err);
+        const resumo = document.getElementById('resumo');
+        resumo.insertAdjacentHTML('afterbegin', `<div class="error-message">Erro ao carregar dados da planilha: ${err.message}</div>`);
+      }
+    }
+
+    // --------------------- PIPELINE ---------------------
+    async function carregarPipeline() {
+      try {
+        const resp = await fetch(PIPELINE_DATA_URL);
+        if (!resp.ok) throw new Error(`Falha ao buscar pipeline: ${resp.status}`);
+        const csv = await resp.text();
+        const { data, headers } = csvToJson(csv);
+
+        // cria colunas por empresa dentro da div 'tratativas'
+        const container = document.getElementById('tratativas');
+        // limpa e cria um layout em grid
+        const colsHtml = `<div class="pipeline-container" id="pipelineContainer" style="display:flex;gap:16px;overflow:auto;margin-top:16px;"></div>`;
+        // remove texto existente e adiciona container
+        container.innerHTML = `<h1 class=\"dashboard-title\"><i class=\"fas fa-filter\" style=\"color:#3b82f6\"></i> Pipeline de Tratativas</h1><div id=\"pipelineContainerHolder\"></div>`;
+        const pipelineHolder = document.getElementById('pipelineContainerHolder');
+
+        const pipelineContainer = document.createElement('div');
+        pipelineContainer.className = 'pipeline-container';
+        pipelineContainer.style.display = 'flex';
+        pipelineContainer.style.gap = '16px';
+        pipelineContainer.style.overflow = 'auto';
+
+        diretorias.forEach(dir => {
+          const col = document.createElement('div');
+          col.className = 'pipeline-col';
+          col.style.flex = '0 0 320px';
+          col.style.background = 'white';
+          col.style.borderRadius = '12px';
+          col.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+
+          col.innerHTML = `
+            <div style="padding:12px;border-bottom:1px solid #eee;background:#f9fafb;border-top-left-radius:12px;border-top-right-radius:12px;">
+              <h3 style="margin:0;font-size:1rem;">${dir}</h3>
+              <div style="margin-top:8px;font-weight:700;color:#333;">Total: <span class=\"count-value\">0</span></div>
+              <div style="margin-top:6px;color:#10b981;font-weight:700;">VGV: <span class=\"vgv-value\">R$ 0</span></div>
+            </div>
+            <div style="padding:10px;max-height:60vh;overflow:auto;" class="col-content" data-dir="${dir}"></div>
+          `;
+
+          pipelineContainer.appendChild(col);
+        });
+
+        pipelineHolder.appendChild(pipelineContainer);
+
+        // Preenche itens por empresa
+        const vgvSums = { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 };
+        const counts = { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 };
+
+        // tenta mapear nomes de colunas comuns
+        const headerMap = headers.reduce((acc,h)=>{ acc[h.toUpperCase()]=h; return acc; },{});
+        const colStatus = headerMap['STATUS'] || headerMap['STAGE'] || headerMap['SITUACAO'] || null;
+        const colEmpresa = headerMap['EMPRESA'] || headerMap['COMPANY'] || null;
+        const colUnidade = headerMap['UNIDADE'] || headerMap['UNIT'] || headerMap['UNIDADE/NOME'] || null;
+        const colVgv = headerMap['VGV'] || headerMap['VALOR'] || null;
+        const colTooltip = headerMap['TOOLTIP'] || headerMap['OBS'] || null;
+
+        data.forEach(row => {
+          const rawEmpresa = (colEmpresa && row[colEmpresa]) ? row[colEmpresa].toUpperCase() : '';
+          const unidade = (colUnidade && row[colUnidade]) ? row[colUnidade] : '';
+          const status = (colStatus && row[colStatus]) ? row[colStatus] : '';
+          const vgv = (colVgv && row[colVgv]) ? Number(row[colVgv].replace(/[^0-9\-\.]/g,'')) : 0;
+          const tooltip = (colTooltip && row[colTooltip]) ? row[colTooltip] : '';
+
+          diretorias.forEach(dir => {
+            if (rawEmpresa.includes(dir) || rawEmpresa.includes(dir.replace(' ','').toUpperCase())) {
+              counts[dir]++;
+              vgvSums[dir] += isNaN(vgv) ? 0 : vgv;
+
+              // encontra a coluna correta para inserir
+              const targetCol = Array.from(pipelineContainer.querySelectorAll('.col-content')).find(c => c.dataset.dir === dir);
+              if (targetCol) {
+                const div = document.createElement('div');
+                div.className = 'tratativa-row';
+                div.style.marginBottom = '8px';
+                div.style.padding = '8px';
+                div.style.border = '1px solid #eee';
+                div.style.borderRadius = '6px';
+                div.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center;gap:8px;\"><div style=\"font-weight:600\">${unidade || '—'}</div><div style=\"font-size:0.9rem;color:#6b7280\">${status || ''}</div></div>`;
+                if (tooltip) div.title = tooltip;
+                targetCol.appendChild(div);
+              }
+            }
+          });
+        });
+
+        // atualiza totais e VGVs
+        const cols = pipelineContainer.querySelectorAll('.pipeline-col');
+        cols.forEach(col => {
+          const dir = col.querySelector('.col-content').dataset.dir;
+          const totalElem = col.querySelector('.count-value');
+          const vgvElem = col.querySelector('.vgv-value');
+          if (totalElem) totalElem.textContent = counts[dir] || 0;
+          if (vgvElem) vgvElem.textContent = (vgvSums[dir] && vgvSums[dir] > 0) ? vgvSums[dir].toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) : 'R$ 0';
+        });
+
+      } catch (err) {
+        console.error('Erro carregarPipeline:', err);
+        const trat = document.getElementById('tratativas');
+        trat.insertAdjacentHTML('beforeend', `<div class="error-message">Erro ao carregar pipeline: ${err.message}</div>`);
+      }
+    }
+
+    // --------------------- Inicialização ---------------------
     carregarResumo();
+    carregarPipeline();
+
   </script>
 </body>
 </html>
