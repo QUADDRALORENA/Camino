@@ -1,741 +1,747 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Dashboard Camino</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root{
-      --primary:#3b82f6; --secondary:#6366f1; --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
-      --dark:#1f2937; --light:#f9fafb; --gray:#6b7280; --border:#e5e7eb;
-      --card-shadow: 0 4px 6px rgba(0,0,0,0.08);
-    }
-    *{box-sizing:border-box;margin:0;padding:0;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
-    body{background:#f3f4f6;color:var(--dark);line-height:1.6;}
-    .container{max-width:1200px;margin:0 auto;padding:20px;}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;}
-    .logo{font-size:20px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:10px;}
-    .logo-img{height:36px;width:auto;border-radius:6px;object-fit:contain;transition:transform .25s;}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;}
-    .tab{padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600;border:1px solid var(--border);font-size:14px;}
-    .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
-    .dashboard{display:none;animation:fadeIn .28s ease;}
-    .dashboard.active{display:block;}
-    .dashboard-title{font-size:22px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
-    .dashboard-subtitle{color:var(--gray);font-size:14px;margin-bottom:12px;}
-    .filter-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;padding:14px;background:#fff;border-radius:10px;box-shadow:var(--card-shadow);}
-    .filter-group{display:flex;flex-direction:column;gap:6px;}
-    .filter-group label{font-weight:600;color:var(--dark);font-size:.85rem;display:flex;align-items:center;gap:8px;}
-    .filter-select, .filter-input{padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:white;font-size:.9rem;}
-    .filter-actions{display:flex;gap:8px;align-items:flex-end;}
-    .btn{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:700;display:flex;align-items:center;gap:8px;font-size:13px;}
-    .btn-primary{background:var(--primary);color:white;}
-    .btn-secondary{background:var(--gray);color:white;}
-    .btn-success{background:var(--success);color:white;}
-    .metrics-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
-    .metric-card{background:white;border-radius:10px;padding:12px;box-shadow:var(--card-shadow);}
-    .metric-header{display:flex;align-items:center;margin-bottom:8px;gap:10px;}
-    .metric-header .icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--light);}
-    .metric-content p{color:var(--gray);margin-bottom:6px;font-size:13px;}
-    .metric-content strong{display:block;font-size:1.25rem;font-weight:700;color:var(--dark);}
-    .charts-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:12px;margin-bottom:18px;}
-    .chart-card{background:white;border-radius:10px;padding:12px;box-shadow:var(--card-shadow);}
-    .chart-container{position:relative;height:260px;width:100%;}
-    .timeline-container{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:12px;padding-bottom:6px;margin-bottom:18px;scroll-behavior:smooth;}
-    .timeline-card{flex:0 0 260px;background:white;border-radius:10px;padding:12px;box-shadow:var(--card-shadow);}
-    .timeline-card h4{font-size:14px;color:var(--primary);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
-    .timeline-card ul{list-style:none;padding-left:0;margin-top:8px;font-size:13px;}
-    .pipeline-container{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;width:100%;}
-    .pipeline-col{flex:0 0 300px;background:white;border-radius:10px;box-shadow:var(--card-shadow);display:flex;flex-direction:column;max-height:70vh;}
-    .col-header{padding:10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:flex-start;background:var(--light);border-top-left-radius:10px;border-top-right-radius:10px;}
-    .col-header h3{font-size:1rem;font-weight:700;margin-bottom:6px;}
-    .col-header .count-value{background:var(--primary);color:white;padding:2px 8px;border-radius:999px;font-size:.8rem;font-weight:700;}
-    .col-content{padding:10px;overflow-y:auto;flex-grow:1;background:#f9fafb;}
-    .tratativa-row{position:relative;cursor:pointer;transition:background-color .15s;padding:8px;border-radius:6px;margin-bottom:6px;background:white;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.9rem;}
-    .loading{text-align:center;padding:10px;color:var(--primary);font-size:14px;}
-    .error-message{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px;border-radius:8px;margin:8px 0;font-size:13px;}
-    .warning-message{background:#fffbeb;border:1px solid #fef3c7;color:#92400e;padding:10px;border-radius:8px;margin:8px 0;font-size:13px;}
-    @media (max-width:900px){ .metrics-grid{grid-template-columns:repeat(2,1fr);} .timeline-card{width:220px;} .charts-container{grid-template-columns:1fr;} }
-    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dashboard Camino — Resumo Corrigido</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --primary:#2563eb; --accent:#6366f1; --orange:#f59e0b; --teal:#06b6d4;
+    --dark:#1f2937; --muted:#6b7280; --bg:#f3f4f6; --card-shadow:0 6px 18px rgba(15,23,42,0.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,InterVar,'Segoe UI',Arial,sans-serif}
+  body{background:var(--bg);color:var(--dark);-webkit-font-smoothing:antialiased;padding:18px;}
+  .container{max-width:1200px;margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo img{height:40px;border-radius:6px}
+  .tabs{display:flex;gap:8px}
+  .tab{padding:8px 12px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;cursor:pointer;font-weight:600}
+  .tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .dashboard{display:none}
+  .dashboard.active{display:block}
+  .header-title{display:flex;flex-direction:column;margin-bottom:12px}
+  .header-title h1{font-size:20px}
+  .header-sub{color:var(--muted);font-size:13px}
+
+  .filter-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding:14px;background:#fff;border-radius:10px;box-shadow:var(--card-shadow);margin-bottom:12px}
+  label{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;display:block}
+  input[type=date], select, .filter-input{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
+
+  .btn{border:0;padding:9px 12px;border-radius:8px;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-ghost{background:#fff;border:1px solid #e6e9ef}
+
+  .metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+  .card{background:#fff;padding:12px;border-radius:10px;box-shadow:var(--card-shadow);min-height:86px}
+  .card h4{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .card .value{font-size:20px;font-weight:800;color:var(--dark);margin-bottom:6px}
+  .card .small-breakdown{font-size:12px;color:var(--muted);opacity:.9}
+
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .chart-card{background:#fff;padding:12px;border-radius:10px;box-shadow:var(--card-shadow);position:relative}
+  .chart-card h3{font-size:13px;margin-bottom:8px;color:var(--muted)}
+
+  .timeline{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
+  .timeline .tcard{background:#fff;padding:12px;border-radius:10px;min-width:260px;box-shadow:var(--card-shadow)}
+  .tcard h4{font-size:13px;margin-bottom:8px;color:var(--primary)}
+  .tcard ul{list-style:none;padding-left:0;font-size:13px}
+  .tcard li{margin-bottom:6px;color:var(--muted)}
+
+  .pipeline{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
+  .pipe-col{background:#fff;padding:10px;border-radius:10px;min-width:300px;box-shadow:var(--card-shadow)}
+  .pipe-col h4{font-size:13px;margin-bottom:8px;color:var(--muted)}
+  .pipe-item{padding:8px;border-radius:8px;border:1px solid #eef2ff;margin-bottom:8px;font-size:13px}
+
+  @media (max-width:1000px){ .metrics{grid-template-columns:repeat(2,1fr)} .charts{grid-template-columns:1fr} .card .value{font-size:18px} }
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="logo">
-        <img src="https://caminoaltodaboavista.touchapp.com.br/img/logo.png" alt="Logo Camino" class="logo-img">
-        <i class="fas fa-chart-line"></i>
-        <span>Dashboard Camino</span>
+<div class="container">
+  <header>
+    <div class="logo">
+      <img src="https://caminoaltodaboavista.touchapp.com.br/img/logo.png" alt="Camino">
+      <div>
+        <strong>Dashboard Camino</strong><br><small style="color:var(--muted)">Resumo operacional — Resumo da Semana</small>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-target="resumo">Resumo da Semana</div>
+      <div class="tab" data-target="panorama-estoque">Panorama Estoque</div>
+      <div class="tab" data-target="controle-atendimentos">Controle de Atendimentos</div>
+      <div class="tab" data-target="tratativas">Pipeline</div>
+    </div>
+  </header>
+
+  <div id="resumo" class="dashboard active">
+    <div class="header-title">
+      <h1>Resumo da Semana</h1>
+      <div id="resumoPeriodo" class="header-sub">Carregando período...</div>
+    </div>
+
+    <div class="filter-panel">
+      <div>
+        <label>Data Início</label>
+        <input id="resumoDataInicio" type="date">
+      </div>
+      <div>
+        <label>Data Fim</label>
+        <input id="resumoDataFim" type="date">
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn btn-primary" onclick="aplicarFiltroResumo()"><i class="fas fa-filter"></i> Aplicar</button>
+        <button class="btn btn-ghost" onclick="definirSemanaAtual()"><i class="fas fa-calendar-week"></i> Semana Atual</button>
+      </div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="card">
+        <h4>TOTAL</h4>
+        <div id="totalAtendimentosSemana" class="value">0</div>
+        <div id="breakdownTotal" class="small-breakdown">Store: 0 • Parcerias: 0 • Yuny Sell: 0</div>
       </div>
 
-      <div class="tabs">
-        <div class="tab active" data-target="resumo">Resumo da Semana</div>
-        <div class="tab" data-target="panorama-estoque">Panorama Estoque</div>
-        <div class="tab" data-target="controle-atendimentos">Controle de Atendimentos</div>
-        <div class="tab" data-target="tratativas">Pipeline de Tratativas</div>
-      </div>
-    </header>
-
-    <div id="statusArea"></div>
-
-    <!-- RESUMO DA SEMANA -->
-    <div id="resumo" class="dashboard active">
-      <div class="dashboard-header">
-        <h1 class="dashboard-title"><i class="fas fa-bullhorn" style="color:#f59e0b"></i> Resumo da Semana</h1>
-        <p class="dashboard-subtitle" id="resumoPeriodo">Carregando período...</p>
+      <div class="card">
+        <h4>VEZ</h4>
+        <div id="resumoVisitas" class="value">0</div>
+        <div id="breakdownVez" class="small-breakdown">Store: 0 • Parcerias: 0 • Yuny Sell: 0</div>
       </div>
 
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="resumoDataInicio"><i class="fas fa-calendar"></i> Data Início</label>
-          <input type="date" id="resumoDataInicio" class="filter-input">
-        </div>
-        <div class="filter-group">
-          <label for="resumoDataFim"><i class="fas fa-calendar"></i> Data Fim</label>
-          <input type="date" id="resumoDataFim" class="filter-input">
-        </div>
-        <div class="filter-actions">
-          <button class="btn btn-primary" onclick="aplicarFiltroResumo()"><i class="fas fa-filter"></i> Aplicar Filtro</button>
-          <button class="btn btn-secondary" onclick="definirSemanaAtual()"><i class="fas fa-calendar-week"></i> Semana Atual</button>
-        </div>
+      <div class="card">
+        <h4>INDICAÇÕES</h4>
+        <div id="resumoIndicacoes" class="value">0</div>
+        <div id="breakdownInd" class="small-breakdown">Store: 0 • Parcerias: 0 • Yuny Sell: 0</div>
       </div>
 
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-header"><div class="icon" style="color:#2563eb"><i class="fas fa-users"></i></div><h3>TOTAL</h3></div>
-          <div class="metric-content"><p>Total da semana:</p><strong id="totalAtendimentosSemana">0</strong></div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header"><div class="icon" style="color:#3b82f6"><i class="fas fa-door-open"></i></div><h3>Vez</h3></div>
-          <div class="metric-content"><p>Total de visitas:</p><strong id="resumoVisitas">0</strong></div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header"><div class="icon" style="color:#6366f1"><i class="fas fa-user-friends"></i></div><h3>Indicações</h3></div>
-          <div class="metric-content"><p>Total de indicações:</p><strong id="resumoIndicacoes">0</strong></div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header"><div class="icon" style="color:#f59e0b"><i class="fas fa-reply"></i></div><h3>Retornos</h3></div>
-          <div class="metric-content"><p>Retornos na semana:</p><strong id="resumoRetornos">0</strong></div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-header"><div class="icon" style="color:#ef4444"><i class="fas fa-file-invoice-dollar"></i></div><h3>Propostas</h3></div>
-          <div class="metric-content"><p>Propostas geradas:</p><strong id="resumoPropostas">0</strong></div>
-        </div>
+      <div class="card">
+        <h4>RETORNOS</h4>
+        <div id="resumoRetornos" class="value">0</div>
+        <div id="breakdownRet" class="small-breakdown">Store: 0 • Parcerias: 0 • Yuny Sell: 0</div>
       </div>
 
-      <div class="charts-container">
-        <div class="chart-card">
-          <h4><i class="fas fa-chart-pie"></i> Distribuição por Diretoria</h4>
-          <div class="chart-container"><canvas id="chartDiretoriaSemana"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <h4><i class="fas fa-chart-bar"></i> Tipo de Atendimento</h4>
-          <div class="chart-container"><canvas id="chartTipoAtendimento"></canvas></div>
-        </div>
-      </div>
-
-      <h2 style="margin:8px 0 6px 0;font-size:14px;font-weight:700;">Performance por Diretoria (Período)</h2>
-      <div class="timeline-container" id="timelineDiretoriaSemana">
-        <div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando performance...</div>
-      </div>
-
-      <h2 style="margin:8px 0 6px 0;font-size:14px;font-weight:700;">Origem dos Clientes</h2>
-      <div class="timeline-container" id="timelineOrigem">
-        <div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando dados de origem...</div>
+      <div class="card">
+        <h4>PROPOSTAS</h4>
+        <div id="resumoPropostas" class="value">0</div>
+        <div id="breakdownProp" class="small-breakdown">Store: 0 • Parcerias: 0 • Yuny Sell: 0</div>
       </div>
     </div>
 
-    <!-- PANORAMA ESTOQUE -->
-    <div id="panorama-estoque" class="dashboard">
-      <div class="dashboard-header">
-        <h1 class="dashboard-title"><i class="fas fa-boxes" style="color:#8b5cf6"></i> Panorama Estoque</h1>
-        <p class="dashboard-subtitle">Visão geral de vendas, estoque e performance - Camino</p>
+    <!-- CHARTS -->
+    <div class="charts">
+      <div class="chart-card">
+        <h3>Distribuição por Diretoria</h3>
+        <canvas id="chartDiretoriaSemana" height="220"></canvas>
       </div>
-
-      <div class="metrics-grid">
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-bullseye"></i></div><h3>Performance Unidades</h3></div><div class="metric-content"><p>Meta 2025: 28 unidades</p><strong>17 unidades</strong><p class="info-text">60.7% de atingimento</p></div></div>
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-chart-line"></i></div><h3>Performance VGV</h3></div><div class="metric-content"><p>Meta 2025: R$ 320M</p><strong>R$ 207.1M</strong><p class="info-text">64.7% de atingimento</p></div></div>
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-calendar-check"></i></div><h3>Outubro 2025</h3></div><div class="metric-content"><p>Meta: 5 unidades</p><strong>4 unidades</strong><p class="info-text">80% de atingimento</p></div></div>
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-box"></i></div><h3>Estoque Total</h3></div><div class="metric-content"><p>Unidades disponíveis:</p><strong>39 unidades</strong><p class="info-text">De 56 unidades totais</p></div></div>
-      </div>
-
-      <div class="charts-container">
-        <div class="chart-card"><h4><i class="fas fa-chart-pie"></i> Vendas por Torre</h4><div class="chart-container"><canvas id="chartVendasTorre"></canvas></div></div>
-        <div class="chart-card"><h4><i class="fas fa-chart-bar"></i> Origem das Vendas</h4><div class="chart-container"><canvas id="chartOrigemVendas"></canvas></div></div>
-      </div>
-
-      <!-- timeline cards kept static per original -->
-      <div class="timeline-container">
-        <div class="timeline-card">
-          <h4><i class="fas fa-check-circle" style="color:#10b981"></i> UNIDADES VENDIDAS</h4>
-          <h5>Total: 17 unidades</h5>
-          <div class="list-group"><h5><i class="fas fa-building"></i> Por Torre</h5><ul><li>JARDINS: 5 unidades</li><li>EUROPA: 7 unidades</li><li>PARQUE: 5 unidades</li></ul></div>
-        </div>
-        <div class="timeline-card">
-          <h4><i class="fas fa-warehouse" style="color:#3b82f6"></i> ESTOQUE ATUAL</h4>
-          <h5>Total: 56 unidades (39 disponíveis)</h5>
-        </div>
-        <div class="timeline-card">
-          <h4><i class="fas fa-trophy" style="color:#f59e0b"></i> PERFORMANCE 2025</h4>
-        </div>
+      <div class="chart-card">
+        <h3>Tipo de Atendimento</h3>
+        <canvas id="chartTipoAtendimento" height="220"></canvas>
       </div>
     </div>
 
-    <!-- CONTROLE ATENDIMENTOS -->
-    <div id="controle-atendimentos" class="dashboard">
-      <div class="dashboard-header">
-        <h1 class="dashboard-title"><i class="fas fa-calendar-check" style="color:#3b82f6"></i> Controle de Atendimentos</h1>
-        <p class="dashboard-subtitle">Gestão completa de visitas e atendimentos comerciais</p>
-      </div>
-
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="filterDataInicio"><i class="fas fa-calendar"></i> Data Início</label>
-          <input type="date" id="filterDataInicio" class="filter-input">
-        </div>
-        <div class="filter-group">
-          <label for="filterDataFim"><i class="fas fa-calendar"></i> Data Fim</label>
-          <input type="date" id="filterDataFim" class="filter-input">
-        </div>
-        <div class="filter-group">
-          <label for="filterDiretoria"><i class="fas fa-building"></i> Diretoria</label>
-          <select id="filterDiretoria" class="filter-select">
-            <option value="todas">Todas as Diretorias</option>
-            <option value="YUNY STORE">YUNY STORE</option>
-            <option value="PARCERIAS">PARCERIAS</option>
-            <option value="YUNY SELL">YUNY SELL</option>
-          </select>
-        </div>
-        <div class="filter-actions">
-          <button class="btn btn-primary" onclick="aplicarFiltros()"><i class="fas fa-filter"></i> Aplicar Filtros</button>
-          <button class="btn btn-secondary" onclick="limparFiltros()"><i class="fas fa-undo"></i> Limpar</button>
-          <button class="btn btn-success" onclick="exportarParaCSV()"><i class="fas fa-download"></i> Exportar CSV</button>
-        </div>
-      </div>
-
-      <div class="metrics-grid">
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-calendar-check"></i></div><h3>TOTAL</h3></div><div class="metric-content"><strong id="totalAtendimentos">0</strong></div></div>
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-store-alt"></i></div><h3>YUNY STORE</h3></div><div class="metric-content"><strong id="totalStore">0</strong></div></div>
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-handshake"></i></div><h3>PARCERIAS</h3></div><div class="metric-content"><strong id="totalParcerias">0</strong></div></div>
-        <div class="metric-card"><div class="metric-header"><div class="icon"><i class="fas fa-chart-line"></i></div><h3>YUNY SELL</h3></div><div class="metric-content"><strong id="totalYunySell">0</strong></div></div>
-      </div>
-
-      <div class="charts-container">
-        <div class="chart-card"><h4><i class="fas fa-chart-pie"></i> Atendimentos por Diretoria</h4><div class="chart-container"><canvas id="chartDiretoriaAtendimentos"></canvas></div></div>
-        <div class="chart-card"><h4><i class="fas fa-chart-bar"></i> Atendimentos por Tipo</h4><div class="chart-container"><canvas id="chartTipoAtendimentos"></canvas></div></div>
-      </div>
-
-      <div style="background:#fff;padding:10px;border-radius:8px;box-shadow:var(--card-shadow);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <h3 style="margin:0;font-size:16px;">Registro de Atendimentos</h3>
-          <div>
-            <input type="text" id="searchInput" placeholder="Buscar..." style="padding:8px;border:1px solid var(--border);border-radius:6px" onkeyup="filtrarTabela()">
-            <button class="btn btn-secondary" onclick="limparBusca()" style="margin-left:8px"><i class="fas fa-times"></i></button>
-          </div>
-        </div>
-        <div style="overflow:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead style="background:#fafafa">
-              <tr>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border)">Data</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border)">Tipo</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border)">Corretor</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border)">Gerente</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border)">Mídia</th>
-                <th style="text-align:left;padding:8px;border-bottom:1px solid var(--border)">Empresa</th>
-              </tr>
-            </thead>
-            <tbody id="tabelaAtendimentos">
-              <tr><td colspan="6" class="loading">Carregando dados...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-          <div id="paginationInfo" style="font-size:13px;color:var(--gray)">Mostrando 0 de 0</div>
-          <div>
-            <button id="btnPrev" class="btn btn-secondary" onclick="mudarPagina(-1)" disabled><i class="fas fa-chevron-left"></i></button>
-            <button id="btnNext" class="btn btn-secondary" onclick="mudarPagina(1)" style="margin-left:6px"><i class="fas fa-chevron-right"></i></button>
-          </div>
-        </div>
-      </div>
+    <!-- PERFORMANCE por diretoria -->
+    <h3 style="margin:6px 0;color:var(--muted)">Performance por Diretoria (Período)</h3>
+    <div id="timelineDiretoriaSemana" class="timeline">
+      <div class="tcard"><div class="loading">Carregando performance...</div></div>
     </div>
 
-    <!-- PIPELINE -->
-    <div id="tratativas" class="dashboard">
-      <div class="dashboard-header">
-        <h1 class="dashboard-title"><i class="fas fa-filter" style="color:#3b82f6"></i> Pipeline de Tratativas</h1>
-        <p class="dashboard-subtitle">Visão detalhada do funil de vendas</p>
-      </div>
-      <div id="pipelineRoot" class="pipeline-container">
-        <div class="loading">Carregando pipeline...</div>
-      </div>
+    <!-- ORIGEM DOS CLIENTES -->
+    <h3 style="margin:10px 0 6px 0;color:var(--muted)">Origem dos Clientes</h3>
+    <div id="timelineOrigem" class="timeline">
+      <div class="tcard"><div class="loading">Carregando origem...</div></div>
     </div>
-
   </div>
 
+  <!-- PANORAMA ESTOQUE (mantido simples) -->
+  <div id="panorama-estoque" class="dashboard">
+    <div class="header-title"><h1>Panorama Estoque</h1><div class="header-sub">Mantido idêntico ao original</div></div>
+    <div class="metrics" style="margin-bottom:10px">
+      <div class="card"><h4>Performance Unidades</h4><div class="value">17</div><div class="small-breakdown">Meta: 28</div></div>
+      <div class="card"><h4>Performance VGV</h4><div class="value">R$ 207.158.088</div><div class="small-breakdown">Meta: R$ 320.000.000</div></div>
+      <div class="card"><h4>Outubro 2025</h4><div class="value">4</div><div class="small-breakdown">Meta: 5</div></div>
+      <div class="card"><h4>Estoque Total</h4><div class="value">39</div><div class="small-breakdown">De 56</div></div>
+      <div class="card"><h4></h4><div></div><div></div></div>
+    </div>
+    <div class="charts">
+      <div class="chart-card"><h3>Vendas por Torre</h3><canvas id="chartVendasTorre" height="220"></canvas></div>
+      <div class="chart-card"><h3>Origem das Vendas</h3><canvas id="chartOrigemVendas" height="220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CONTROLE ATENDIMENTOS -->
+  <div id="controle-atendimentos" class="dashboard">
+    <div class="header-title"><h1>Controle de Atendimentos</h1><div class="header-sub">Filtros e tabela</div></div>
+
+    <div class="filter-panel">
+      <div>
+        <label>Data Início</label>
+        <input id="filterDataInicio" type="date">
+      </div>
+      <div>
+        <label>Data Fim</label>
+        <input id="filterDataFim" type="date">
+      </div>
+      <div>
+        <label>Diretoria</label>
+        <select id="filterDiretoria">
+          <option value="todas">Todas</option>
+          <option>YUNY STORE</option>
+          <option>PARCERIAS</option>
+          <option>YUNY SELL</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn btn-primary" onclick="aplicarFiltros()"><i class="fas fa-filter"></i> Aplicar</button>
+        <button class="btn btn-ghost" onclick="limparFiltros()"><i class="fas fa-undo"></i> Limpar</button>
+      </div>
+      <div></div>
+    </div>
+
+    <div class="metrics" style="margin-bottom:12px">
+      <div class="card"><h4>TOTAL</h4><div id="totalAtendimentos" class="value">0</div></div>
+      <div class="card"><h4>YUNY STORE</h4><div id="totalStore" class="value">0</div></div>
+      <div class="card"><h4>PARCERIAS</h4><div id="totalParcerias" class="value">0</div></div>
+      <div class="card"><h4>YUNY SELL</h4><div id="totalYunySell" class="value">0</div></div>
+      <div class="card"></div>
+    </div>
+
+    <div class="charts" style="margin-bottom:12px">
+      <div class="chart-card"><h3>Atendimentos por Diretoria</h3><canvas id="chartDiretoriaAtendimentos" height="220"></canvas></div>
+      <div class="chart-card"><h3>Atendimentos por Tipo</h3><canvas id="chartTipoAtendimentos" height="220"></canvas></div>
+    </div>
+
+    <div style="background:#fff;padding:10px;border-radius:10px;box-shadow:var(--card-shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Registro de Atendimentos</strong>
+        <div>
+          <input id="searchInput" placeholder="Buscar..." style="padding:8px;border:1px solid #e6e9ef;border-radius:8px" onkeyup="filtrarTabela()">
+          <button class="btn btn-ghost" onclick="limparBusca()"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead style="background:#fafafa">
+            <tr>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #eef2ff">Data</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #eef2ff">Tipo</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #eef2ff">Corretor</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #eef2ff">Gerente</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #eef2ff">Mídia</th>
+              <th style="text-align:left;padding:8px;border-bottom:1px solid #eef2ff">Empresa</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaAtendimentos"><tr><td colspan="6" style="padding:12px">Carregando dados...</td></tr></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <div id="paginationInfo" style="color:var(--muted)">Mostrando 0 de 0</div>
+        <div>
+          <button id="btnPrev" class="btn btn-ghost" onclick="mudarPagina(-1)" disabled><i class="fas fa-chevron-left"></i></button>
+          <button id="btnNext" class="btn btn-ghost" onclick="mudarPagina(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="tratativas" class="dashboard">
+    <div class="header-title"><h1>Pipeline de Tratativas</h1><div class="header-sub">Visão do funil</div></div>
+    <div id="pipelineRoot" class="pipeline"></div>
+  </div>
+
+</div>
+
 <script>
-/* CONFIG */
-const SHEET_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTE4TL2UpdsZM43opfqqdDH2gdW_tzoHd4z-_7vxb6koicdOJWt6r-SoFVR0FWaAEs8UmJJGirQ0h0S/pub?gid=0&single=true&output=csv';
+/* ====================
+   CONFIG
+   ==================== */
+const SHEET_DATA_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTE4TL2UpdsZM43opfqqdDH2gdW_tzoHd4z-_7vxb6koicdOJWt6r-SoFVR0FWaAEs8UmJJGirQ0h0S/pub?gid=0&single=true&output=csv';
 const PIPELINE_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQdqDsD7zwfjYT3BkEpLe_qBUPXjmPkOhkbJTM-VbGF71l94gijdOLIgQz9CkebfjnSobOPvZalst51/pub?gid=0&single=true&output=csv';
 const DIRETORIAS = ['YUNY STORE','PARCERIAS','YUNY SELL'];
-const CORES = { 'YUNY STORE':'#6366f1', 'PARCERIAS':'#f59e0b', 'YUNY SELL':'#06b6d4' };
+const COLORS = { 'YUNY STORE':'#6366f1', 'PARCERIAS':'#f59e0b', 'YUNY SELL':'#06b6d4' };
 
-/* Helpers */
-function setTextAll(id, text){
-  const nodes = document.querySelectorAll(`[id="${id}"]`);
-  if(nodes && nodes.length) nodes.forEach(n=> n.textContent = text);
-  else { const el = document.getElementById(id); if(el) el.textContent = text; }
-}
-function detectDelimiter(headerLine){
-  if(!headerLine) return ',';
-  if(headerLine.indexOf(';')!==-1 && headerLine.indexOf(',')===-1) return ';';
-  if(headerLine.indexOf('\t')!==-1 && headerLine.indexOf(',')===-1) return '\t';
+/* ====================
+   Util: CSV parsing robusto
+   ==================== */
+function detectDelimiter(line){
+  if(!line) return ',';
+  if(line.includes(';') && !line.includes(',')) return ';';
+  if(line.includes('\t') && !line.includes(',')) return '\t';
   return ',';
 }
-function splitCSVLine(line, delimiter){
-  const res=[]; let cur=''; let inQuotes=false;
+function splitCSVLine(line, delim){
+  const out=[]; let cur=''; let inQuotes=false;
   for(let i=0;i<line.length;i++){
     const ch=line[i];
-    if(ch==='"'){
-      if(inQuotes && line[i+1]==='"'){ cur+='"'; i++; continue;}
-      inQuotes=!inQuotes; continue;
+    if(ch === '"'){
+      if(inQuotes && line[i+1] === '"'){ cur+='"'; i++; continue; }
+      inQuotes = !inQuotes; continue;
     }
-    if(ch===delimiter && !inQuotes){ res.push(cur); cur=''; continue; }
-    cur+=ch;
+    if(ch === delim && !inQuotes){ out.push(cur); cur=''; continue; }
+    cur += ch;
   }
-  res.push(cur);
-  return res.map(s=>s.trim());
+  out.push(cur); return out.map(s=>s.trim());
 }
 function csvToJson(csv){
-  if(!csv) return { data:[], headers:[] };
-  const norm = csv.replace(/\r/g,'').split('\n').filter(l=>l.trim()!=='');
-  if(norm.length===0) return { data:[], headers:[] };
-  const delimiter = detectDelimiter(norm[0]);
-  const headers = splitCSVLine(norm[0], delimiter).map(h=>h.replace(/^"|"$/g,'').trim());
+  if(!csv) return {data:[], headers:[]};
+  const rows = csv.replace(/\r/g,'').split('\n').filter(r=>r.trim()!=='');
+  if(rows.length === 0) return {data:[], headers:[]};
+  const delim = detectDelimiter(rows[0]);
+  const headers = splitCSVLine(rows[0], delim).map(h=>h.replace(/^"|"$/g,'').trim());
   const data = [];
-  for(let i=1;i<norm.length;i++){
-    const row = splitCSVLine(norm[i], delimiter);
-    if(row.length===1 && row[0]==='') continue;
+  for(let i=1;i<rows.length;i++){
+    const cols = splitCSVLine(rows[i], delim);
+    if(cols.length === 1 && cols[0] === '') continue;
     const obj = {};
-    for(let j=0;j<headers.length;j++) obj[headers[j]||`COL${j}`] = (row[j]||'').replace(/^"|"$/g,'').trim();
+    for(let j=0;j<headers.length;j++){
+      obj[headers[j] || `COL${j}`] = (cols[j]||'').replace(/^"|"$/g,'').trim();
+    }
     data.push(obj);
   }
-  return { data, headers };
+  return {data, headers};
 }
+
+/* ====================
+   date helpers
+   ==================== */
 function parseDateBR(d){
   if(!d) return null;
-  if(typeof d === 'object' && d instanceof Date) return d;
-  if(d.indexOf('/')!==-1){
+  if(d instanceof Date) return d;
+  if(d.includes('/')){
     const p=d.split('/');
     if(p.length===3) return new Date(`${p[2]}-${p[1]}-${p[0]}T00:00:00`);
   }
-  if(d.indexOf('-')!==-1) return new Date(d+'T00:00:00');
+  if(d.includes('-')) return new Date(d + 'T00:00:00');
   return null;
 }
-function formatCurrencyBR(v){ if(isNaN(v)) return 'R$ 0'; return Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}); }
+function isoDateInput(d){
+  if(!(d instanceof Date)) d = new Date(d);
+  return d.toISOString().slice(0,10);
+}
+function formatDDMMYYYY(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
 
-/* Estado */
-let atendimentosData = [];
-let atendimentosFiltrados = [];
-let paginaAtual = 1;
-const itensPorPagina = 10;
+/* ====================
+   estado
+   ==================== */
+let rawData = [];           // todos os atendimentos (array de objetos)
+let filteredData = [];      // aplicados filtros
+let currentPage = 1;
+const perPage = 10;
 
-/* CARREGAR ATENDIMENTOS */
+/* ====================
+   Carregar dados e inicializar
+   ==================== */
 async function carregarDadosAtendimentos(){
   const tbody = document.getElementById('tabelaAtendimentos');
-  if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="loading">Carregando dados...</td></tr>`;
+  if(tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding:12px">Carregando dados...</td></tr>`;
   try{
     const res = await fetch(SHEET_DATA_URL);
-    if(!res.ok) throw new Error('Status '+res.status);
+    if(!res.ok) throw new Error('Erro ao buscar planilha: ' + res.status);
     const csv = await res.text();
-    const { data, headers } = csvToJson(csv);
-    atendimentosData = data.slice();
-    atendimentosFiltrados = data.slice();
-    paginaAtual = 1;
-    renderizarTabela();
-    // preencher cards / gráficos com todos os dados
-    atualizarCardsComFiltro(atendimentosData);
-    // setar período automático (semana atual)
-    definirSemanaAtual(); // preenche inputs e chama aplicarFiltroResumo() quando aplicável
-    // popular timeline e origem (usamos todos por padrão)
-    atualizarPerformanceDiretoriaSemana(atendimentosData);
-    popularOrigemClientes(atendimentosData);
+    const {data, headers} = csvToJson(csv);
+    rawData = data;
+    filteredData = data.slice();
+    currentPage = 1;
+    renderTabela();
+    // preencher cartões e charts com todos os dados inicialmente
+    aplicarSemanaAutomaticaOnLoad(data, headers);
+    atualizarCardsComFiltro(filteredData);
+    atualizarPerformanceDiretoriaSemana(filteredData);
+    popularOrigemClientes(filteredData);
   } catch(err){
     console.error(err);
-    if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="error-message">Erro ao carregar planilha: ${err.message}</td></tr>`;
-    const statusArea = document.getElementById('statusArea');
-    if(statusArea) statusArea.innerHTML = `<div class="error-message">Erro ao carregar planilha: ${err.message}</div>`;
+    if(tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding:12px;color:#b91c1c">Erro: ${err.message}</td></tr>`;
   }
 }
 
-/* RENDER TABELA */
-function renderizarTabela(){
+/* ====================
+   Render tabela
+   ==================== */
+function renderTabela(){
   const tbody = document.getElementById('tabelaAtendimentos');
   if(!tbody) return;
   tbody.innerHTML = '';
-  const total = atendimentosFiltrados.length || 0;
-  const start = (paginaAtual-1)*itensPorPagina;
-  const page = atendimentosFiltrados.slice(start, start+itensPorPagina);
-  if(page.length===0){
-    tbody.innerHTML = `<tr><td colspan="6" class="loading">Nenhum registro encontrado</td></tr>`;
+  const total = filteredData.length;
+  const start = (currentPage-1)*perPage;
+  const page = filteredData.slice(start, start+perPage);
+  if(page.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:12px">Nenhum registro encontrado</td></tr>`;
   } else {
-    page.forEach(r=>{
-      const keys = Object.keys(r);
-      const dataVal = r[keys.find(k=>k.toUpperCase().includes('DATA'))] || r[keys[0]] || '';
-      const tipoVal = r[keys.find(k=>k.toUpperCase().includes('TIPO'))] || '';
-      const corretorVal = r[keys.find(k=>k.toUpperCase().includes('CORRETOR'))] || '';
-      const gerenteVal = r[keys.find(k=>k.toUpperCase().includes('GERENTE'))] || '';
-      const midiaVal = r[keys.find(k=>k.toUpperCase().includes('MIDIA'))] || '';
-      const empresaVal = r[keys.find(k=>k.toUpperCase().includes('EMP'))] || '';
+    for(const row of page){
+      const keys = Object.keys(row);
+      const dataVal = row[keys.find(k=>k.toUpperCase().includes('DATA'))] || '';
+      const tipoVal = row[keys.find(k=>k.toUpperCase().includes('TIPO'))] || '';
+      const corretorVal = row[keys.find(k=>k.toUpperCase().includes('CORRETOR'))] || '';
+      const gerenteVal = row[keys.find(k=>k.toUpperCase().includes('GERENTE'))] || '';
+      const midiaVal = row[keys.find(k=>k.toUpperCase().includes('MIDIA')||k.toUpperCase().includes('ORIGEM')||k.toUpperCase().includes('CANAL'))] || '';
+      const empresaVal = row[keys.find(k=>k.toUpperCase().includes('EMP'))] || '';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="padding:8px;border-bottom:1px solid var(--border)">${dataVal}</td><td style="padding:8px;border-bottom:1px solid var(--border)">${tipoVal}</td><td style="padding:8px;border-bottom:1px solid var(--border)">${corretorVal}</td><td style="padding:8px;border-bottom:1px solid var(--border)">${gerenteVal}</td><td style="padding:8px;border-bottom:1px solid var(--border)">${midiaVal}</td><td style="padding:8px;border-bottom:1px solid var(--border)">${empresaVal}</td>`;
+      tr.innerHTML = `<td style="padding:8px;border-bottom:1px solid #f1f5f9">${dataVal}</td>
+                      <td style="padding:8px;border-bottom:1px solid #f1f5f9">${tipoVal}</td>
+                      <td style="padding:8px;border-bottom:1px solid #f1f5f9">${corretorVal}</td>
+                      <td style="padding:8px;border-bottom:1px solid #f1f5f9">${gerenteVal}</td>
+                      <td style="padding:8px;border-bottom:1px solid #f1f5f9">${midiaVal}</td>
+                      <td style="padding:8px;border-bottom:1px solid #f1f5f9">${empresaVal}</td>`;
       tbody.appendChild(tr);
-    });
+    }
   }
-  const paginationInfo = document.getElementById('paginationInfo');
-  const totalPaginas = Math.max(1, Math.ceil(total/itensPorPagina));
-  if(paginationInfo) paginationInfo.textContent = `Mostrando ${Math.min(total, paginaAtual*itensPorPagina)} de ${total} registros (pág ${paginaAtual}/${totalPaginas})`;
-  document.getElementById('btnPrev').disabled = paginaAtual <= 1;
-  document.getElementById('btnNext').disabled = paginaAtual >= totalPaginas;
-  setTextAll('totalAtendimentos', total.toLocaleString('pt-BR'));
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  document.getElementById('paginationInfo').textContent = `Mostrando ${Math.min(total, currentPage*perPage)} de ${total} (pág ${currentPage}/${totalPages})`;
+  document.getElementById('btnPrev').disabled = currentPage <= 1;
+  document.getElementById('btnNext').disabled = currentPage >= totalPages;
+  document.getElementById('totalAtendimentos').textContent = total.toLocaleString('pt-BR');
 }
 
-/* FILTROS E BUSCAS */
+/* ====================
+   filtros (controle e resumo)
+   ==================== */
 function aplicarFiltros(){
-  const dataInicio = document.getElementById('filterDataInicio').value;
-  const dataFim = document.getElementById('filterDataFim').value;
-  const diretoria = document.getElementById('filterDiretoria').value;
-  const tipo = document.getElementById('filterTipo') ? document.getElementById('filterTipo').value : null;
-  let arr = atendimentosData.slice();
-
-  function findKeyLike(keys){ for(const k of keys){ for(const h of Object.keys(arr[0]||{})){ if(h.toUpperCase().includes(k)) return h; } } return null; }
-  const keyData = findKeyLike(['DATA','DATE']);
-  const keyTipo = findKeyLike(['TIPO','TYPE']);
-  const keyEmpresa = findKeyLike(['EMPRESA','COMPANY','EMP']);
-
-  if(dataInicio){
-    const dtInicio = parseDateBR(dataInicio);
-    arr = arr.filter(r=>{ const d = parseDateBR(r[keyData]||r['Data']||''); return d && d >= dtInicio; });
-  }
-  if(dataFim){
-    const dtFim = parseDateBR(dataFim);
-    arr = arr.filter(r=>{ const d = parseDateBR(r[keyData]||r['Data']||''); return d && d <= dtFim; });
-  }
-  if(diretoria && diretoria!=='todas'){
-    arr = arr.filter(r=> (r[keyEmpresa]||'').toUpperCase().includes(diretoria));
-  }
-  if(tipo && tipo!=='todos'){
-    arr = arr.filter(r=> ((r[keyTipo]||Object.values(r).join(' '))+'').toUpperCase().includes(tipo.toUpperCase()));
-  }
-  atendimentosFiltrados = arr;
-  paginaAtual = 1;
-  renderizarTabela();
-  atualizarCardsComFiltro(arr);
-  atualizarPerformanceDiretoriaSemana(arr);
-  popularOrigemClientes(arr);
+  const di = document.getElementById('filterDataInicio').value;
+  const df = document.getElementById('filterDataFim').value;
+  const dir = document.getElementById('filterDiretoria').value;
+  let arr = rawData.slice();
+  const keyData = Object.keys(arr[0]||{}).find(k=>k.toUpperCase().includes('DATA')) || null;
+  if(di){ const d1 = parseDateBR(di); arr = arr.filter(r=>{ const d=parseDateBR(r[keyData]||r['Data']||''); return d && d >= d1; }); }
+  if(df){ const d2 = parseDateBR(df); arr = arr.filter(r=>{ const d=parseDateBR(r[keyData]||r['Data']||''); return d && d <= d2; }); }
+  if(dir && dir !== 'todas'){ arr = arr.filter(r => (Object.values(r).join(' ')||'').toUpperCase().includes(dir.toUpperCase())); }
+  filteredData = arr;
+  currentPage = 1;
+  renderTabela();
+  atualizarCardsComFiltro(filteredData);
+  atualizarPerformanceDiretoriaSemana(filteredData);
+  popularOrigemClientes(filteredData);
 }
 
 function limparFiltros(){
-  document.getElementById('filterDataInicio').value='';
-  document.getElementById('filterDataFim').value='';
-  document.getElementById('filterDiretoria').value='todas';
-  if(document.getElementById('filterTipo')) document.getElementById('filterTipo').value='todos';
-  atendimentosFiltrados = atendimentosData.slice();
-  paginaAtual = 1;
-  renderizarTabela();
-  atualizarCardsComFiltro(atendimentosFiltrados);
-  atualizarPerformanceDiretoriaSemana(atendimentosFiltrados);
-  popularOrigemClientes(atendimentosFiltrados);
+  document.getElementById('filterDataInicio').value = '';
+  document.getElementById('filterDataFim').value = '';
+  document.getElementById('filterDiretoria').value = 'todas';
+  filteredData = rawData.slice();
+  currentPage = 1;
+  renderTabela();
+  atualizarCardsComFiltro(filteredData);
+  atualizarPerformanceDiretoriaSemana(filteredData);
+  popularOrigemClientes(filteredData);
 }
 
+/* busca */
 function filtrarTabela(){
   const q = (document.getElementById('searchInput').value||'').toLowerCase();
-  if(!q){ atendimentosFiltrados = atendimentosData.slice(); renderizarTabela(); atualizarCardsComFiltro(atendimentosFiltrados); return; }
-  atendimentosFiltrados = atendimentosData.filter(r => JSON.stringify(Object.values(r)).toLowerCase().includes(q));
-  paginaAtual = 1;
-  renderizarTabela();
-  atualizarCardsComFiltro(atendimentosFiltrados);
+  if(!q){ filteredData = rawData.slice(); currentPage = 1; renderTabela(); atualizarCardsComFiltro(filteredData); return; }
+  filteredData = rawData.filter(r => JSON.stringify(Object.values(r)).toLowerCase().includes(q));
+  currentPage = 1; renderTabela(); atualizarCardsComFiltro(filteredData);
 }
-function limparBusca(){ document.getElementById('searchInput').value=''; atendimentosFiltrados = atendimentosData.slice(); paginaAtual=1; renderizarTabela(); atualizarCardsComFiltro(atendimentosFiltrados); }
-function mudarPagina(delta){ const totalPaginas = Math.max(1, Math.ceil((atendimentosFiltrados.length||0)/itensPorPagina)); paginaAtual = Math.min(Math.max(1, paginaAtual+delta), totalPaginas); renderizarTabela(); }
+function limparBusca(){ document.getElementById('searchInput').value=''; filteredData = rawData.slice(); currentPage=1; renderTabela(); atualizarCardsComFiltro(filteredData); }
+function mudarPagina(delta){ const totalPages = Math.max(1, Math.ceil((filteredData.length||0)/perPage)); currentPage = Math.min(Math.max(1, currentPage+delta), totalPages); renderTabela(); }
 
-/* EXPORT CSV */
-function exportarParaCSV(){
-  if(!atendimentosFiltrados || atendimentosFiltrados.length===0){ alert('Nenhum dado para exportar'); return; }
-  const keys = Object.keys(atendimentosFiltrados[0]);
-  const lines = [ keys.join(',') ];
-  atendimentosFiltrados.forEach(r => {
-    const row = keys.map(k => `"${(r[k]||'').replace(/"/g,'""')}"`);
-    lines.push(row.join(','));
+/* ====================
+   Charts — estilo próximo do original
+   ==================== */
+let chartDiretoriaSemana = null;
+let chartTipoAtendimento = null;
+let chartDiretoriaAtendimentos = null;
+let chartTipoAtendimentos = null;
+
+function criarChartDiretoria(canvas, labels, data){
+  const ctx = canvas.getContext('2d');
+  if(chartDiretoriaSemana) chartDiretoriaSemana.destroy();
+  chartDiretoriaSemana = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor:[COLORS['YUNY STORE'], COLORS['PARCERIAS'], COLORS['YUNY SELL']], borderColor:'#fff', borderWidth:2 }]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{boxWidth:12, padding:12}}, tooltip:{callbacks:{label:ctx=>{ const v = ctx.raw; const total = data.reduce((s,i)=>s+i,0); const pct = total?((v/total)*100).toFixed(1):0; return `${ctx.label}: ${v} (${pct}%)`; }}}},
+    }
   });
-  const blob = new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download='atendimentos_export.csv'; document.body.appendChild(a); a.click(); a.remove();
+}
+function criarChartTipo(canvas, labels, data){
+  const ctx = canvas.getContext('2d');
+  if(chartTipoAtendimento) chartTipoAtendimento.destroy();
+  chartTipoAtendimento = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Atendimentos', data, backgroundColor:labels.map((l,i)=> i%2? '#e6edf8':'#cfe7ff' ) }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true } } }
+  });
 }
 
-/* ATUALIZAR CARDS E CHARTS (com array filtrado) */
-let _chartDiretoriaSemana = null;
-let _chartTipoAtendimento = null;
-let _chartDiretoriaAtendimentos = null;
-let _chartTipoAtendimentos = null;
-
+/* ====================
+   atualizar cards e charts com um array filtrado
+   ==================== */
 function atualizarCardsComFiltro(arr){
-  // conta por diretoria e por tipo (VEZ, INDICAÇÃO, RETORNO, PROPOSTA)
-  const counts = {}; DIRETORIAS.forEach(d=>counts[d]=0);
-  let visitas=0, indicacoes=0, retornos=0, propostas=0;
-  // detect keys
   const keys = Object.keys(arr[0]||{});
   const keyEmpresa = keys.find(k=>k.toUpperCase().includes('EMP')) || null;
   const keyTipo = keys.find(k=>k.toUpperCase().includes('TIPO')) || null;
-  arr.forEach(row=>{
-    const empresaRaw = (keyEmpresa && row[keyEmpresa]) ? row[keyEmpresa].toUpperCase() : (Object.values(row).join(' ').toUpperCase());
-    const tipoRaw = (keyTipo && row[keyTipo]) ? row[keyTipo].toUpperCase() : Object.values(row).join(' ').toUpperCase();
-    if(tipoRaw.includes('VEZ')) visitas++;
-    if(tipoRaw.includes('INDI')) indicacoes++;
-    if(tipoRaw.includes('RETORNO')) retornos++;
-    if(tipoRaw.includes('PROPOSTA')) propostas++;
-    DIRETORIAS.forEach(d=>{
-      if(empresaRaw.includes(d) || empresaRaw.includes(d.replace(' ','').toUpperCase()) || empresaRaw.includes(d.split(' ')[0])){
-        counts[d] = (counts[d]||0)+1;
-      }
-    });
-  });
-  setTextAll('totalAtendimentosSemana', (arr.length||0).toLocaleString('pt-BR'));
-  setTextAll('resumoVisitas', visitas.toLocaleString('pt-BR'));
-  setTextAll('resumoIndicacoes', indicacoes.toLocaleString('pt-BR'));
-  setTextAll('resumoRetornos', retornos.toLocaleString('pt-BR'));
-  setTextAll('resumoPropostas', propostas.toLocaleString('pt-BR'));
-  setTextAll('totalStore', (counts['YUNY STORE']||0).toLocaleString('pt-BR'));
-  setTextAll('totalParcerias', (counts['PARCERIAS']||0).toLocaleString('pt-BR'));
-  setTextAll('totalYunySell', (counts['YUNY SELL']||0).toLocaleString('pt-BR'));
+  // init counts
+  const countsByDir = { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 };
+  const countsByTipo = { 'VEZ':0, 'INDICAÇÃO':0, 'RETORNO':0, 'PROPOSTA':0, 'OUTROS':0 };
+  const breakdown = {
+    total: { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 },
+    VEZ: { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 },
+    INDICACAO: { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 },
+    RETORNO: { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 },
+    PROPOSTA: { 'YUNY STORE':0, 'PARCERIAS':0, 'YUNY SELL':0 },
+  };
+  for(const r of arr){
+    const empRaw = (keyEmpresa && r[keyEmpresa]) ? r[keyEmpresa].toUpperCase() : (Object.values(r).join(' ').toUpperCase());
+    const tipoRaw = (keyTipo && r[keyTipo]) ? r[keyTipo].toUpperCase() : (Object.values(r).join(' ').toUpperCase());
+    // detectar diretoria
+    let dirFound = null;
+    for(const d of DIRETORIAS) if(empRaw.includes(d) || empRaw.includes(d.replace(' ','').toUpperCase()) || empRaw.includes(d.split(' ')[0])) { dirFound = d; break; }
+    if(dirFound) countsByDir[dirFound]++;
+    // tipo
+    if(tipoRaw.includes('VEZ')) { countsByTipo['VEZ']++; if(dirFound) breakdown.VEZ[dirFound]++; breakdown.total[dirFound||'YUNY STORE']++;}
+    else if(tipoRaw.includes('INDI')) { countsByTipo['INDICAÇÃO']++; if(dirFound) breakdown.INDICACAO[dirFound]++; breakdown.total[dirFound||'YUNY STORE']++; }
+    else if(tipoRaw.includes('RETORNO')) { countsByTipo['RETORNO']++; if(dirFound) breakdown.RETORNO[dirFound]++; breakdown.total[dirFound||'YUNY STORE']++; }
+    else if(tipoRaw.includes('PROPOSTA')) { countsByTipo['PROPOSTA']++; if(dirFound) breakdown.PROPOSTA[dirFound]++; breakdown.total[dirFound||'YUNY STORE']++; }
+    else { countsByTipo['OUTROS']++; if(dirFound) breakdown.INDICACAO[dirFound]++; breakdown.total[dirFound||'YUNY STORE']++; }
+  }
 
-  // atualizar chart diretoria semana
+  // atualizar cards principais
+  document.getElementById('totalAtendimentosSemana').textContent = (arr.length||0).toLocaleString('pt-BR');
+  document.getElementById('resumoVisitas').textContent = (countsByTipo['VEZ']||0).toLocaleString('pt-BR');
+  document.getElementById('resumoIndicacoes').textContent = (countsByTipo['INDICAÇÃO']||0).toLocaleString('pt-BR');
+  document.getElementById('resumoRetornos').textContent = (countsByTipo['RETORNO']||0).toLocaleString('pt-BR');
+  document.getElementById('resumoPropostas').textContent = (countsByTipo['PROPOSTA']||0).toLocaleString('pt-BR');
+
+  // breakdown strings (display small) - ensure keys exist
+  const bTotal = `Store: ${ (breakdown.total['YUNY STORE']||0) } • Parcerias: ${ (breakdown.total['PARCERIAS']||0) } • Yuny Sell: ${ (breakdown.total['YUNY SELL']||0) }`;
+  document.getElementById('breakdownTotal').textContent = bTotal;
+  document.getElementById('breakdownVez').textContent = `Store: ${breakdown.VEZ['YUNY STORE']||0} • Parcerias: ${breakdown.VEZ['PARCERIAS']||0} • Yuny Sell: ${breakdown.VEZ['YUNY SELL']||0}`;
+  document.getElementById('breakdownInd').textContent = `Store: ${breakdown.INDICACAO['YUNY STORE']||0} • Parcerias: ${breakdown.INDICACAO['PARCERIAS']||0} • Yuny Sell: ${breakdown.INDICACAO['YUNY SELL']||0}`;
+  document.getElementById('breakdownRet').textContent = `Store: ${breakdown.RETORNO['YUNY STORE']||0} • Parcerias: ${breakdown.RETORNO['PARCERIAS']||0} • Yuny Sell: ${breakdown.RETORNO['YUNY SELL']||0}`;
+  document.getElementById('breakdownProp').textContent = `Store: ${breakdown.PROPOSTA['YUNY STORE']||0} • Parcerias: ${breakdown.PROPOSTA['PARCERIAS']||0} • Yuny Sell: ${breakdown.PROPOSTA['YUNY SELL']||0}`;
+
+  // atualizar gráficos: Diretoria (respeita filtro)
   const labelsDir = ['Yuny Store','Parcerias','Yuny Sell'];
-  const dataDir = [counts['YUNY STORE']||0, counts['PARCERIAS']||0, counts['YUNY SELL']||0];
-  const ctxD = document.getElementById('chartDiretoriaSemana').getContext('2d');
-  if(_chartDiretoriaSemana) _chartDiretoriaSemana.destroy();
-  _chartDiretoriaSemana = new Chart(ctxD, {
-    type:'pie',
-    data:{ labels:labelsDir, datasets:[{ data:dataDir, backgroundColor:[CORES['YUNY STORE'], CORES['PARCERIAS'], CORES['YUNY SELL']] }]},
-    options:{responsive:true, plugins:{legend:{position:'bottom'}}}
-  });
+  const dataDir = [ countsByDir['YUNY STORE']||0, countsByDir['PARCERIAS']||0, countsByDir['YUNY SELL']||0 ];
+  criarChartDiretoria(document.getElementById('chartDiretoriaSemana'), labelsDir, dataDir);
 
-  // atualizar tipo atendimento chart
-  const tipos = { 'VEZ':visitas, 'INDICAÇÃO':indicacoes, 'RETORNO':retornos, 'PROPOSTA':propostas };
-  const ctxT = document.getElementById('chartTipoAtendimento').getContext('2d');
-  if(_chartTipoAtendimento) _chartTipoAtendimento.destroy();
-  _chartTipoAtendimento = new Chart(ctxT, {
-    type:'bar',
-    data:{ labels:Object.keys(tipos), datasets:[{ label:'Atendimentos', data:Object.values(tipos) }]},
-    options:{responsive:true, plugins:{legend:{display:false}}}
-  });
+  // Tipo chart
+  const labelsTipo = Object.keys(countsByTipo);
+  const dataTipo = labelsTipo.map(k => countsByTipo[k]);
+  criarChartTipo(document.getElementById('chartTipoAtendimento'), labelsTipo, dataTipo);
 
-  // também atualiza gráficos da aba Controle de Atendimentos (se existirem)
-  const ctxDA = document.getElementById('chartDiretoriaAtendimentos');
-  if(ctxDA){
-    if(_chartDiretoriaAtendimentos) _chartDiretoriaAtendimentos.destroy();
-    _chartDiretoriaAtendimentos = new Chart(ctxDA.getContext('2d'), {
+  // atualizar charts da aba controle (mesma info)
+  if(document.getElementById('chartDiretoriaAtendimentos')) {
+    const ctx = document.getElementById('chartDiretoriaAtendimentos').getContext('2d');
+    if(chartDiretoriaAtendimentos) chartDiretoriaAtendimentos.destroy();
+    chartDiretoriaAtendimentos = new Chart(ctx, {
       type:'doughnut',
-      data:{ labels:labelsDir, datasets:[{ data:dataDir, backgroundColor:[CORES['YUNY STORE'], CORES['PARCERIAS'], CORES['YUNY SELL']] }]},
-      options:{responsive:true, plugins:{legend:{position:'bottom'}}}
+      data:{ labels: labelsDir, datasets:[{ data:dataDir, backgroundColor:[COLORS['YUNY STORE'], COLORS['PARCERIAS'], COLORS['YUNY SELL']], borderColor:'#fff', borderWidth:2 }]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}}
     });
   }
-  const ctxTA = document.getElementById('chartTipoAtendimentos');
-  if(ctxTA){
-    if(_chartTipoAtendimentos) _chartTipoAtendimentos.destroy();
-    _chartTipoAtendimentos = new Chart(ctxTA.getContext('2d'), {
-      type:'bar',
-      data:{ labels:Object.keys(tipos), datasets:[{ label:'Atendimentos', data:Object.values(tipos) }]},
-      options:{responsive:true, plugins:{legend:{display:false}}}
-    });
+  if(document.getElementById('chartTipoAtendimentos')){
+    const ctx2 = document.getElementById('chartTipoAtendimentos').getContext('2d');
+    if(chartTipoAtendimentos) chartTipoAtendimentos.destroy();
+    chartTipoAtendimentos = new Chart(ctx2, { type:'bar', data:{ labels:labelsTipo, datasets:[{ label:'Atendimentos', data:dataTipo }]}, options:{responsive:true} });
   }
+
+  // atualizar cards controle (totais por diretoria)
+  document.getElementById('totalStore').textContent = (countsByDir['YUNY STORE']||0).toLocaleString('pt-BR');
+  document.getElementById('totalParcerias').textContent = (countsByDir['PARCERIAS']||0).toLocaleString('pt-BR');
+  document.getElementById('totalYunySell').textContent = (countsByDir['YUNY SELL']||0).toLocaleString('pt-BR');
 }
 
-/* PERFORMANCE POR DIRETORIA (timeline) */
-function atualizarPerformanceDiretoriaSemana(dados){
+/* ====================
+   Performance por Diretoria (timeline)
+   ==================== */
+function atualizarPerformanceDiretoriaSemana(arr){
   const container = document.getElementById('timelineDiretoriaSemana');
   container.innerHTML = '';
-  if(!dados || dados.length===0){ container.innerHTML = '<div class="warning-message">Nenhum dado para o período.</div>'; return; }
-  const metricas = {}; DIRETORIAS.forEach(d=>metricas[d]={visitas:0,indicacoes:0,retornos:0,total:0});
-  const keys = Object.keys(dados[0]||{});
+  if(!arr || arr.length === 0){
+    container.innerHTML = '<div class="tcard"><div>Nenhum dado para o período.</div></div>'; return;
+  }
+  // detect keys
+  const keys = Object.keys(arr[0]||{});
   const keyTipo = keys.find(k=>k.toUpperCase().includes('TIPO')) || null;
   const keyEmpresa = keys.find(k=>k.toUpperCase().includes('EMP')) || null;
-  dados.forEach(row=>{
-    const tipo = (keyTipo && row[keyTipo]) ? row[keyTipo].toUpperCase() : Object.values(row).join(' ').toUpperCase();
-    const emp = (keyEmpresa && row[keyEmpresa]) ? row[keyEmpresa].toUpperCase() : Object.values(row).join(' ').toUpperCase();
-    DIRETORIAS.forEach(d=>{
-      if(emp.includes(d) || emp.includes(d.replace(' ','').toUpperCase()) || emp.includes(d.split(' ')[0])){
-        if(tipo.includes('VEZ')) metricas[d].visitas++;
-        else if(tipo.includes('INDI')) metricas[d].indicacoes++;
-        else if(tipo.includes('RETORNO')) metricas[d].retornos++;
-        metricas[d].total = metricas[d].visitas + metricas[d].indicacoes + metricas[d].retornos;
-      }
-    });
-  });
-  DIRETORIAS.forEach(d=>{
-    const m = metricas[d];
-    const card = document.createElement('div'); card.className='timeline-card';
-    card.innerHTML = `<h4><i class="fas fa-circle" style="color:${CORES[d]}"></i> ${d}</h4>
-      <ul><li>Visitas: ${m.visitas}</li><li>Indicações: ${m.indicacoes}</li><li>Retornos: ${m.retornos}</li><li>Total: ${m.total}</li></ul>`;
-    container.appendChild(card);
-  });
-}
 
-/* ORIGEM DOS CLIENTES */
-function popularOrigemClientes(dados){
-  const container = document.getElementById('timelineOrigem');
-  container.innerHTML = '';
-  if(!dados || dados.length===0){ container.innerHTML = '<div class="warning-message">Nenhum dado de origem.</div>'; return; }
-  const counts = { 'ONLINE':0, 'CARTEIRA':0, 'VEZ':0, 'INDICAÇÃO':0, 'OUTROS':0 };
-  dados.forEach(r=>{
-    const s = Object.values(r).join(' ').toUpperCase();
-    if(s.includes('ONLINE')) counts['ONLINE']++;
-    else if(s.includes('CARTEIRA')) counts['CARTEIRA']++;
-    else if(s.includes('VEZ')) counts['VEZ']++;
-    else if(s.includes('INDI')) counts['INDICAÇÃO']++;
-    else counts['OUTROS']++;
-  });
-  // criar cards
-  for(const k of ['ONLINE','CARTEIRA','VEZ','INDICAÇÃO','OUTROS']){
-    const card = document.createElement('div'); card.className='timeline-card';
-    card.innerHTML = `<h4><i class="fas fa-map-marker-alt" style="color:var(--primary)"></i> ${k}</h4><h5 style="margin:6px 0">${counts[k]||0} clientes</h5>`;
+  const metrics = {};
+  for(const d of DIRETORIAS) metrics[d] = { visitas:0, indicacoes:0, retornos:0, propostas:0, total:0 };
+
+  for(const r of arr){
+    const tipoRaw = (keyTipo && r[keyTipo]) ? r[keyTipo].toUpperCase() : Object.values(r).join(' ').toUpperCase();
+    const empRaw = (keyEmpresa && r[keyEmpresa]) ? r[keyEmpresa].toUpperCase() : Object.values(r).join(' ').toUpperCase();
+    for(const d of DIRETORIAS){
+      if(empRaw.includes(d) || empRaw.includes(d.replace(' ','').toUpperCase()) || empRaw.includes(d.split(' ')[0])){
+        if(tipoRaw.includes('VEZ')) metrics[d].visitas++;
+        else if(tipoRaw.includes('INDI')) metrics[d].indicacoes++;
+        else if(tipoRaw.includes('RETORNO')) metrics[d].retornos++;
+        else if(tipoRaw.includes('PROPOSTA')) metrics[d].propostas++;
+        metrics[d].total = metrics[d].visitas + metrics[d].indicacoes + metrics[d].retornos + metrics[d].propostas;
+      }
+    }
+  }
+
+  for(const d of DIRETORIAS){
+    const m = metrics[d];
+    const card = document.createElement('div'); card.className = 'tcard';
+    card.innerHTML = `<h4 style="color:${COLORS[d]}">${d}</h4>
+      <ul>
+        <li><strong>Total:</strong> ${m.total}</li>
+        <li><strong>Vez:</strong> ${m.visitas}</li>
+        <li><strong>Indicações:</strong> ${m.indicacoes}</li>
+        <li><strong>Retornos:</strong> ${m.retornos}</li>
+        <li><strong>Propostas:</strong> ${m.propostas}</li>
+      </ul>`;
     container.appendChild(card);
   }
 }
 
-/* PERÍODO AUTOMÁTICO - define inputs para semana atual (segunda-domingo) e atualiza texto */
+/* ====================
+   Origem dos clientes — agrupado por TIPO, listando origens e contagens
+   ==================== */
+function popularOrigemClientes(arr){
+  const container = document.getElementById('timelineOrigem');
+  container.innerHTML = '';
+  if(!arr || arr.length === 0){
+    container.innerHTML = '<div class="tcard">Nenhum dado de origem.</div>'; return;
+  }
+  const keys = Object.keys(arr[0]||{});
+  const keyTipo = keys.find(k=>k.toUpperCase().includes('TIPO')) || null;
+  const keyOrigem = keys.find(k=>k.toUpperCase().includes('ORIG')||k.toUpperCase().includes('MIDIA')||k.toUpperCase().includes('CANAL')) || null;
+
+  // types we want to display and mapping
+  const typesList = ['VEZ','INDI','RETORNO','PROPOSTA','OUTROS'];
+  const grouped = {}; // grouped[type] = { origin:count }
+  for(const t of typesList) grouped[t] = {};
+
+  for(const r of arr){
+    const tipoRaw = (keyTipo && r[keyTipo]) ? r[keyTipo].toUpperCase() : '';
+    const origemRaw = (keyOrigem && r[keyOrigem]) ? r[keyOrigem] : 'SEM ORIGEM';
+    let typeKey = 'OUTROS';
+    if(tipoRaw.includes('VEZ')) typeKey = 'VEZ';
+    else if(tipoRaw.includes('INDI')) typeKey = 'INDI';
+    else if(tipoRaw.includes('RETORNO')) typeKey = 'RETORNO';
+    else if(tipoRaw.includes('PROPOSTA')) typeKey = 'PROPOSTA';
+    const mapKey = (origemRaw||'SEM ORIGEM').trim();
+    grouped[typeKey][mapKey] = (grouped[typeKey][mapKey]||0) + 1;
+  }
+
+  // create cards in the original requested format:
+  // VEZ
+  // - origem A
+  // - origem B
+  for(const type of ['VEZ','INDI','RETORNO','PROPOSTA','OUTROS']){
+    const obj = grouped[type];
+    const card = document.createElement('div'); card.className='tcard';
+    const title = type === 'INDI' ? 'Indicação' : (type==='OUTROS' ? 'Outros' : type[0] + type.slice(1).toLowerCase());
+    card.innerHTML = `<h4>${title}</h4>`;
+    const ul = document.createElement('ul');
+    const entries = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    if(entries.length === 0){
+      const li = document.createElement('li'); li.textContent = '—'; ul.appendChild(li);
+    } else {
+      for(const [orig, cnt] of entries){
+        const li = document.createElement('li'); li.textContent = `${orig} — ${cnt}`; ul.appendChild(li);
+      }
+    }
+    card.appendChild(ul);
+    container.appendChild(card);
+  }
+}
+
+/* ====================
+   Pipeline
+   ==================== */
+async function carregarPipeline(){
+  const root = document.getElementById('pipelineRoot');
+  root.innerHTML = '<div class="pipe-col"><div>Carregando pipeline...</div></div>';
+  try{
+    const res = await fetch(PIPELINE_DATA_URL);
+    if(!res.ok) throw new Error('Status ' + res.status);
+    const csv = await res.text();
+    const {data, headers} = csvToJson(csv);
+    root.innerHTML = '';
+    const headerMap = {}; headers.forEach(h=>headerMap[h.toUpperCase()] = h);
+    const colEmpresa = headerMap['EMPRESA'] || headerMap['COMPANY'] || headers.find(h=>h.toUpperCase().includes('EMP'));
+    const colUnidade = headerMap['UNIDADE'] || headerMap['UNIT'] || headers.find(h=>h.toUpperCase().includes('UNIDADE'));
+    const colStatus = headerMap['STATUS'] || headerMap['STAGE'] || headers.find(h=>h.toUpperCase().includes('STATUS'));
+    const colVgv = headerMap['VGV'] || headerMap['VALOR'] || headers.find(h=>h.toUpperCase().includes('VGV')||h.toUpperCase().includes('VALOR'));
+    const colsByDir = {};
+    for(const d of DIRETORIAS){
+      const col = document.createElement('div'); col.className='pipe-col';
+      col.innerHTML = `<h4>${d}</h4><div class="pipe-body"></div>`;
+      root.appendChild(col);
+      colsByDir[d] = col.querySelector('.pipe-body');
+    }
+    // populate
+    for(const row of data){
+      const emp = (colEmpresa && row[colEmpresa]) ? row[colEmpresa].toUpperCase() : (Object.values(row).join(' ').toUpperCase());
+      const unidade = (colUnidade && row[colUnidade]) ? row[colUnidade] : '—';
+      const status = (colStatus && row[colStatus]) ? row[colStatus] : '';
+      const vgv = (colVgv && row[colVgv]) ? row[colVgv] : '';
+      for(const d of DIRETORIAS){
+        if(emp.includes(d) || emp.includes(d.replace(' ','').toUpperCase()) || emp.includes(d.split(' ')[0])){
+          const item = document.createElement('div'); item.className='pipe-item';
+          item.innerHTML = `<div style="font-weight:700">${unidade}</div><div style="font-size:13px;color:var(--muted)">${status} ${vgv?('- '+vgv):''}</div>`;
+          colsByDir[d].appendChild(item);
+        }
+      }
+    }
+  } catch(err){
+    root.innerHTML = `<div class="pipe-col">Erro ao carregar pipeline: ${err.message}</div>`;
+  }
+}
+
+/* ====================
+   período automático e aplicar filtro resumo
+   ==================== */
 function getMonday(d){
   const day = d.getDay();
-  const diff = (day===0 ? -6 : 1) - day; // if sunday -> go back 6
-  const monday = new Date(d);
-  monday.setDate(d.getDate() + diff);
-  monday.setHours(0,0,0,0);
+  const diff = (day === 0 ? -6 : 1) - day;
+  const monday = new Date(d); monday.setDate(d.getDate() + diff); monday.setHours(0,0,0,0);
   return monday;
 }
-function getSunday(monday){
-  const s = new Date(monday);
-  s.setDate(monday.getDate()+6);
-  s.setHours(23,59,59,999);
-  return s;
+function getSunday(monday){ const s = new Date(monday); s.setDate(monday.getDate() + 6); s.setHours(23,59,59,999); return s; }
+
+function aplicarSemanaAutomaticaOnLoad(data, headers){
+  // if sheet has dates, set default to last week's monday-sunday or current week
+  const hoje = new Date();
+  const monday = getMonday(hoje);
+  const sunday = getSunday(monday);
+  document.getElementById('resumoDataInicio').value = isoDateInput(monday);
+  document.getElementById('resumoDataFim').value = isoDateInput(sunday);
+  document.getElementById('resumoPeriodo').textContent = `Período: ${formatDDMMYYYY(monday)} — ${formatDDMMYYYY(sunday)}`;
+  // apply filter to show only that period
+  aplicarFiltroResumo();
 }
-function formatDDMMYYYY(d){
-  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-}
+
 function definirSemanaAtual(){
   const hoje = new Date();
   const monday = getMonday(hoje);
   const sunday = getSunday(monday);
-  document.getElementById('resumoDataInicio').value = monday.toISOString().slice(0,10);
-  document.getElementById('resumoDataFim').value = sunday.toISOString().slice(0,10);
+  document.getElementById('resumoDataInicio').value = isoDateInput(monday);
+  document.getElementById('resumoDataFim').value = isoDateInput(sunday);
   document.getElementById('resumoPeriodo').textContent = `Período: ${formatDDMMYYYY(monday)} — ${formatDDMMYYYY(sunday)}`;
-  aplicarFiltroResumo(); // aplica filtro na visualização principal também
+  aplicarFiltroResumo();
 }
+
 function aplicarFiltroResumo(){
-  // pega valores dos inputs de resumo e filtra atendimentosData
-  const inicio = document.getElementById('resumoDataInicio').value;
-  const fim = document.getElementById('resumoDataFim').value;
-  if(!atendimentosData || atendimentosData.length===0){ carregarDadosAtendimentos(); return; }
-  let arr = atendimentosData.slice();
+  // filtra rawData com base em inputs resumoDataInicio/resumoDataFim
+  const di = document.getElementById('resumoDataInicio').value;
+  const df = document.getElementById('resumoDataFim').value;
+  let arr = rawData.slice();
+  if(arr.length === 0){ carregarDadosAtendimentos(); return; }
   const keyData = Object.keys(arr[0]||{}).find(k=>k.toUpperCase().includes('DATA')) || null;
-  if(inicio){
-    const dtInicio = parseDateBR(inicio);
-    arr = arr.filter(r=>{ const d = parseDateBR(r[keyData]||r['Data']||''); return d && d >= dtInicio; });
-  }
-  if(fim){
-    const dtFim = parseDateBR(fim);
-    arr = arr.filter(r=>{ const d = parseDateBR(r[keyData]||r['Data']||''); return d && d <= dtFim; });
-  }
-  // atualizar UI
-  atendimentosFiltrados = arr;
-  paginaAtual = 1;
-  renderizarTabela();
-  atualizarCardsComFiltro(arr);
-  atualizarPerformanceDiretoriaSemana(arr);
-  popularOrigemClientes(arr);
-  // atualizar resumoPeriodo texto
-  if(inicio && fim){
-    const d1 = parseDateBR(inicio); const d2 = parseDateBR(fim);
-    if(d1 && d2) document.getElementById('resumoPeriodo').textContent = `Período: ${formatDDMMYYYY(d1)} — ${formatDDMMYYYY(d2)}`;
-  }
+  if(di){ const d1 = parseDateBR(di); arr = arr.filter(r=>{ const d = parseDateBR(r[keyData]||r['Data']||''); return d && d >= d1; }); }
+  if(df){ const d2 = parseDateBR(df); arr = arr.filter(r=>{ const d = parseDateBR(r[keyData]||r['Data']||''); return d && d <= d2; }); }
+  filteredData = arr; currentPage = 1; renderTabela(); atualizarCardsComFiltro(filteredData); atualizarPerformanceDiretoriaSemana(filteredData); popularOrigemClientes(filteredData);
 }
 
-/* CARREGAR PIPELINE */
-async function carregarPipeline(){
-  const root = document.getElementById('pipelineRoot');
-  root.innerHTML = `<div class="loading">Carregando pipeline...</div>`;
-  try{
-    const res = await fetch(PIPELINE_DATA_URL);
-    if(!res.ok) throw new Error('Status '+res.status);
-    const csv = await res.text();
-    const { data, headers } = csvToJson(csv);
-    root.innerHTML = '';
-    const container = document.createElement('div'); container.className='pipeline-container';
-    DIRETORIAS.forEach(dir=>{
-      const col = document.createElement('div'); col.className='pipeline-col';
-      col.innerHTML = `<div class="col-header"><h3>${dir}</h3><div>Total: <span class="count-value">0</span></div><div style="margin-top:6px">VGV: <span class="vgv-value">R$ 0</span></div></div><div class="col-content" data-dir="${dir}"></div>`;
-      container.appendChild(col);
-    });
-    root.appendChild(container);
-    // detectar colunas
-    const headerMap={}; headers.forEach(h=>headerMap[h.toUpperCase()]=h);
-    const colEmpresa = headerMap['EMPRESA']||headerMap['COMPANY']||headers.find(h=>h.toUpperCase().includes('EMP'));
-    const colUnidade = headerMap['UNIDADE']||headerMap['UNIT']||headers.find(h=>h.toUpperCase().includes('UNIDADE'));
-    const colStatus = headerMap['STATUS']||headerMap['STAGE']||headers.find(h=>h.toUpperCase().includes('STATUS'));
-    const colVgv = headerMap['VGV']||headerMap['VALOR']||headers.find(h=>h.toUpperCase().includes('VGV')||h.toUpperCase().includes('VALOR'));
-    const colObs = headerMap['OBS']||headerMap['TOOLTIP']||headers.find(h=>h.toUpperCase().includes('OBS'));
-    const counts={}; const vgvSums={}; DIRETORIAS.forEach(d=>{counts[d]=0; vgvSums[d]=0;});
-    data.forEach(row=>{
-      const emp = (colEmpresa && row[colEmpresa]) ? row[colEmpresa].toUpperCase() : (Object.values(row).join(' ').toUpperCase());
-      const unidade = colUnidade ? row[colUnidade] || '' : '';
-      const status = colStatus ? row[colStatus] || '' : '';
-      const vgvRaw = colVgv ? (row[colVgv]||'') : '';
-      const obs = colObs ? (row[colObs]||'') : '';
-      let vgv = 0;
-      if(vgvRaw){ const cleaned = vgvRaw.replace(/[^\d\-,\.]/g,'').replace(',','.'); vgv = Number(cleaned)||0; }
-      DIRETORIAS.forEach(d=>{
-        if(emp.includes(d) || emp.includes(d.replace(' ','').toUpperCase()) || emp.includes(d.split(' ')[0])){
-          counts[d]++; vgvSums[d]+=vgv;
-          const colContent = container.querySelector(`.col-content[data-dir="${d}"]`);
-          if(colContent){
-            const item = document.createElement('div'); item.className='tratativa-row';
-            item.innerHTML = `<div style="font-weight:600">${unidade||'—'}</div><div style="font-size:.85rem;color:var(--gray)">${status||''}</div>`;
-            if(obs) item.title = obs;
-            colContent.appendChild(item);
-          }
-        }
-      });
-    });
-    container.querySelectorAll('.pipeline-col').forEach(col=>{
-      const dir = col.querySelector('.col-content').dataset.dir;
-      const totalElem = col.querySelector('.count-value'); const vgvElem = col.querySelector('.vgv-value');
-      if(totalElem) totalElem.textContent = (counts[dir]||0);
-      if(vgvElem) vgvElem.textContent = (vgvSums[dir] && vgvSums[dir]>0) ? formatCurrencyBR(vgvSums[dir]) : 'R$ 0';
-    });
-  } catch(err){
-    console.error('Erro pipeline', err);
-    const root = document.getElementById('pipelineRoot'); if(root) root.innerHTML = `<div class="error-message">Erro ao carregar pipeline: ${err.message}</div>`;
-  }
-}
-
-/* INIT */
+/* ====================
+   init
+   ==================== */
 document.addEventListener('DOMContentLoaded', ()=>{
-  // tabs
-  document.querySelectorAll('.tab').forEach(tab=>{
-    tab.addEventListener('click', ()=> {
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.dashboard').forEach(d=>d.classList.remove('active'));
-      tab.classList.add('active');
-      const target = tab.dataset.target;
-      const el = document.getElementById(target);
-      if(el) el.classList.add('active');
-    });
-  });
-  // inicializar filtros e carregar dados
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.dashboard').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); const target = t.dataset.target; document.getElementById(target).classList.add('active');
+  }));
   carregarDadosAtendimentos();
   carregarPipeline();
 });
@@ -745,7 +751,6 @@ window.carregarDadosAtendimentos = carregarDadosAtendimentos;
 window.carregarPipeline = carregarPipeline;
 window.aplicarFiltros = aplicarFiltros;
 window.limparFiltros = limparFiltros;
-window.exportarParaCSV = exportarParaCSV;
 window.aplicarFiltroResumo = aplicarFiltroResumo;
 window.definirSemanaAtual = definirSemanaAtual;
 </script>
