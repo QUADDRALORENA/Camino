@@ -3085,5 +3085,38 @@ function atualizarPerformanceDiretoriaSemana() {
 setTimeout(atualizarYunySellControle, 3000);
 
 </script></script>
- </body>
+ 
+<script>
+// Robust initializer to ensure data loading and chart init
+(function(){
+  function safeCall(fnName) {
+    try {
+      const fn = window[fnName];
+      if (typeof fn === 'function') {
+        fn();
+      } else {
+        console.warn(fnName + ' is not a function');
+      }
+    } catch (e) {
+      console.error('Error calling ' + fnName, e);
+    }
+  }
+
+  // On DOM ready, force carregarDadosPlanilha and other inits
+  document.addEventListener('DOMContentLoaded', function() {
+    // try call carregarDadosPlanilha
+    safeCall('carregarDadosPlanilha');
+    // small delay for charts/data population
+    setTimeout(function(){
+      safeCall('atualizarPerformanceDiretoriaSemana');
+      safeCall('atualizarYunySellControle');
+      // try to update any chart drawing functions if present
+      safeCall('atualizarGraficoPorDiretoria');
+      safeCall('atualizarGraficoAtendimentosPorDiretoria');
+    }, 800);
+  });
+})();
+</script>
+
+</body>
 </html>
