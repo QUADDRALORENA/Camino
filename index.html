@@ -428,7 +428,6 @@ function limparFiltros(){
   popularOrigemClientes(filteredData);
 }
 
-/* busca */
 function filtrarTabela(){
   const q = (document.getElementById('searchInput').value||'').toLowerCase();
   if(!q){ filteredData = rawData.slice(); currentPage = 1; renderTabela(); atualizarCardsComFiltro(filteredData); return; }
