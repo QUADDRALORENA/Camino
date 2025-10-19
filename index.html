@@ -81,6 +81,12 @@ function atualizarYunySellControle() {
 
 // Atualizar automaticamente após carregar os dados
 setTimeout(atualizarYunySellControle, 3000);
+        document.addEventListener("DOMContentLoaded", () => {
+  const homesphereCard = document.getElementById("totalHomesphere");
+  if (homesphereCard) {
+    homesphereCard.closest(".metric-card").style.display = "none";
+  }
+});
 
 </script>
     <style>
