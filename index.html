@@ -15,35 +15,26 @@ function atualizarPerformanceDiretoriaSemana() {
         return;
     }
 
-    // Lista de diretorias que queremos exibir (HOMESPHERE e DIRETORIA foram removidas)
-    const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
-
+const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
     const cores = {
         STORE: '#6366f1',
         HOMESPHERE: '#10b981',
         PARCERIAS: '#f59e0b',
         'YUNY SELL': '#06b6d4',
+        DIRETORIA: '#8b5cf6'
     };
 
-    // inicializa estrutura de métricas somente para as diretorias acima
     const metricas = {};
     diretorias.forEach(dir => {
         metricas[dir] = { visitas: 0, indicacoes: 0, retornos: 0, total: 0 };
     });
 
-    // percorre os dados filtrados e acumula somente para as diretorias desejadas
     dadosResumoFiltrados.forEach(item => {
         const tipo = (item[COL_TIPO] || '').toUpperCase();
-        const dirRaw = (item[COL_DIRETORIA] || '').toUpperCase().trim();
+        const dir = (item[COL_DIRETORIA] || '').toUpperCase();
+        const diretoria = diretorias.find(d => dir.includes(d)) || 'OUTROS';
 
-        // Ignorar registros explicitamente de HOMESPHERE ou DIRETORIA
-        if (dirRaw.includes('HOMESPHERE') || dirRaw.includes('DIRETORIA')) {
-            return;
-        }
-
-        // encontra a diretoria na lista (procura substring)
-        const diretoria = diretorias.find(d => dirRaw.includes(d)) || null;
-        if (!diretoria) return; // não interessa (ex.: OUTROS)
+        if (!metricas[diretoria]) return;
 
         if (tipo.includes('VEZ')) metricas[diretoria].visitas++;
         else if (tipo.includes('INDI')) metricas[diretoria].indicacoes++;
@@ -55,14 +46,13 @@ function atualizarPerformanceDiretoriaSemana() {
             metricas[diretoria].retornos;
     });
 
-    // monta os cards apenas para as diretorias na lista
     diretorias.forEach(dir => {
-        const data = metricas[dir] || { visitas: 0, indicacoes: 0, retornos: 0, total: 0 };
+        const data = metricas[dir];
         const card = document.createElement('div');
         card.className = 'timeline-card';
         card.innerHTML = `
-            <h4><i class="fas fa-circle" style="color:${cores[dir] || '#999'}"></i> ${dir}</h4>
-            <h5>Performance no Período</h5>
+            <h4><i class="fas fa-circle" style="color:${cores[dir]}"></i> ${dir}</h4>
+            <h5>Performance da Periodo</h5>
             <ul>
                 <li>Visitas: ${data.visitas}</li>
                 <li>Indicações: ${data.indicacoes}</li>
@@ -72,12 +62,6 @@ function atualizarPerformanceDiretoriaSemana() {
         `;
         container.appendChild(card);
     });
-
-    // Se quiser: mostrar mensagem se todos os totals forem zero
-    const totalGeral = Object.values(metricas).reduce((s, m) => s + (m.total || 0), 0);
-    if (totalGeral === 0) {
-        container.innerHTML = '<p class="warning-message">Nenhum dado relevante encontrado para as diretorias exibidas no período selecionado.</p>';
-    }
 }
 
 
@@ -924,10 +908,7 @@ setTimeout(atualizarYunySellControle, 3000);
             text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         }
         /* OCULTAR abas não utilizadas */
-.tab[data-target="resumo-mes"],
-.tab[data-target="historico-mes"] {
-    display: none !important;
-}
+
   
 .logo-fixed:hover {
     opacity: 1;
@@ -967,8 +948,6 @@ setTimeout(atualizarYunySellControle, 3000);
 </div>
         <div class="tabs">
             <div class="tab active" data-target="resumo">Resumo da Semana</div>
-            <div class="tab" data-target="resumo-mes">Resumo do Mês</div>
-            <div class="tab" data-target="historico-mes">Histórico Mensal</div>
             <div class="tab" data-target="panorama-estoque">Panorama Estoque</div>
             <div class="tab" data-target="controle-atendimentos">Controle de Atendimentos</div>
             <div class="tab" data-target="tratativas">Pipeline de Tratativas</div>
@@ -1102,273 +1081,6 @@ setTimeout(atualizarYunySellControle, 3000);
     </div>
 
     <!-- DEMAIS ABAS PERMANECEM EXATAMENTE IGUAIS AO ORIGINAL -->
-    <div id="resumo-mes" class="dashboard">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">
-                <i class="fas fa-calendar-alt" style="color: #10b981;"></i>
-                Resumo do Mês - OUTUBRO
-            </h1>
-            <p class="dashboard-subtitle">CAMINO - Outubro/2025</p>
-        </div>
-
-        <div class="metrics-grid">
-
-<div class="metric-card" id="cardTotalAtendimentosSemana">
-  <div class="metric-header">
-    <div class="icon" style="color: #2563eb;"><i class="fas fa-users"></i></div>
-    <h3>TOTAL</h3>
-  </div>
-  <div class="metric-content">
-    <p>Total da semana:</p>
-    <strong id="totalAtendimentosSemana">0</strong>
-    <p class="info-text">Atendimentos registrados no período</p>
-  </div>
-</div>
-
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #3b82f6;"><i class="fas fa-door-open"></i></div>
-                    <h3>Visitas Espontâneas</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Total de visitas:</p>
-                    <strong>7</strong>
-                    <p class="info-text">Store: 6 / Sell: 0 / Homesphere: 1</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #6366f1;"><i class="fas fa-user-friends"></i></div>
-                    <h3>Indicações Empresa</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Total de indicações:</p>
-                    <strong>7</strong>
-                    <p class="info-text">Store: 4 / Sell: 2 / Home: 0 / Parcerias: 1</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #f59e0b;"><i class="fas fa-reply"></i></div>
-                    <h3>Retornos</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Retornos no mês:</p>
-                    <strong>2</strong>
-                    <p class="info-text">Store: 1 / Sell: 0 / Home: 1 / Parcerias: 0</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #10b981;"><i class="fas fa-chart-line"></i></div>
-                    <h3>TOTAL</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Atendimentos totais:</p>
-                    <strong>35</strong>
-                    <p class="info-text">Visitas + Indicações + Retornos</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-container">
-            <div class="chart-card">
-                <h4><i class="fas fa-chart-pie"></i> Distribuição por Diretoria - Outubro</h4>
-                <div class="chart-container">
-                    <canvas id="chartDiretoriaOutubro"></canvas>
-                </div>
-            </div>
-            <div class="chart-card">
-                <h4><i class="fas fa-chart-bar"></i> Tipo de Atendimento - Outubro</h4>
-                <div class="chart-container">
-                    <canvas id="chartTipoAtendimentoOutubro"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <h2 class="timeline-header">Performance Outubro por Diretoria</h2>
-        <div class="timeline-container">
-            <div class="timeline-card">
-                <h4><i class="fas fa-store-alt" style="color: #6366f1;"></i> STORE</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 6</li>
-                    <li>Indicações: 4</li>
-                    <li>Retornos: 1</li>
-                    <li>Total: 11</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h4><i class="fas fa-home" style="color: #10b981;"></i> HOMESPHERE</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 1</li>
-                    <li>Indicações: 0</li>
-                    <li>Retornos: 1</li>
-                    <li>Total: 2</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h4><i class="fas fa-handshake" style="color: #f59e0b;"></i> PARCERIAS</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 0</li>
-                    <li>Indicações: 1</li>
-                    <li>Retornos: 0</li>
-                    <li>Total: 1</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h4><i class="fas fa-chart-line" style="color: #06b6d4;"></i> YUNY SELL</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 0</li>
-                    <li>Indicações: 2</li>
-                    <li>Retornos: 0</li>
-                    <li>Total: 2</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <div id="historico-mes" class="dashboard">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">
-                <i class="fas fa-history" style="color: #8b5cf6;"></i>
-                Histórico Mensal - SETEMBRO
-            </h1>
-            <p class="dashboard-subtitle">Relatório Mensal - Setembro/2025</p>
-        </div>
-
-        <div class="metrics-grid">
-
-<div class="metric-card" id="cardTotalAtendimentosSemana">
-  <div class="metric-header">
-    <div class="icon" style="color: #2563eb;"><i class="fas fa-users"></i></div>
-    <h3>TOTAL</h3>
-  </div>
-  <div class="metric-content">
-    <p>Total da semana:</p>
-    <strong id="totalAtendimentosSemana">0</strong>
-    <p class="info-text">Atendimentos registrados no período</p>
-  </div>
-</div>
-
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #3b82f6;"><i class="fas fa-door-open"></i></div>
-                    <h3>Visitas Espontâneas</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Total de visitas:</p>
-                    <strong>53</strong>
-                    <p class="info-text">Store: 31 / Sell: 6 / Homesphere: 16</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #6366f1;"><i class="fas fa-user-friends"></i></div>
-                    <h3>Indicações Empresa</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Total de indicações:</p>
-                    <strong>61</strong>
-                    <p class="info-text">Store: 24 / Sell: 4 / Home: 19 / Diretoria: 1 / Parcerias: 13</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #f59e0b;"><i class="fas fa-reply"></i></div>
-                    <h3>Retornos</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Retornos no mês:</p>
-                    <strong>17</strong>
-                    <p class="info-text">Store: 5 / Sell: 0 / Home: 6 / Parcerias: 6</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-header">
-                    <div class="icon" style="color: #10b981;"><i class="fas fa-chart-line"></i></div>
-                    <h3>TOTAL</h3>
-                </div>
-                <div class="metric-content">
-                    <p>Atendimentos totais:</p>
-                    <strong>131</strong>
-                    <p class="info-text">Visitas + Indicações + Retornos</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-container">
-            <div class="chart-card">
-                <h4><i class="fas fa-chart-pie"></i> Distribuição por Diretoria - Setembro</h4>
-                <div class="chart-container">
-                    <canvas id="chartDiretoriaSetembro"></canvas>
-                </div>
-            </div>
-            <div class="chart-card">
-                <h4><i class="fas fa-chart-bar"></i> Tipo de Atendimento - Setembro</h4>
-                <div class="chart-container">
-                    <canvas id="chartTipoAtendimentoSetembro"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <h2 class="timeline-header">Performance Setembro por Diretoria</h2>
-        <div class="timeline-container">
-            <div class="timeline-card">
-                <h4><i class="fas fa-store-alt" style="color: #6366f1;"></i> STORE</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 31</li>
-                    <li>Indicações: 24</li>
-                    <li>Retornos: 5</li>
-                    <li>Total: 60</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h4><i class="fas fa-home" style="color: #10b981;"></i> HOMESPHERE</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 16</li>
-                    <li>Indicações: 19</li>
-                    <li>Retornos: 6</li>
-                    <li>Total: 41</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h4><i class="fas fa-handshake" style="color: #f59e0b;"></i> PARCERIAS</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 0</li>
-                    <li>Indicações: 13</li>
-                    <li>Retornos: 6</li>
-                    <li>Total: 19</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h4><i class="fas fa-chart-line" style="color: #06b6d4;"></i> YUNY SELL</h4>
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 6</li>
-                    <li>Indicações: 4</li>
-                    <li>Retornos: 0</li>
-                    <li>Total: 10</li>
-                </ul>
-            </div>
-            <div class="timeline-card">
-                <h5>Performance do Mês</h5>
-                <ul>
-                    <li>Visitas: 0</li>
-                    <li>Indicações: 1</li>
-                    <li>Retornos: 0</li>
-                    <li>Total: 1</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
     <div id="panorama-estoque" class="dashboard">
         <div class="dashboard-header">
             <h1 class="dashboard-title">
@@ -2051,10 +1763,10 @@ setTimeout(atualizarYunySellControle, 3000);
     // Calcular todas as métricas do resumo - FUNÇÃO ATUALIZADA
     function calcularMetricasResumo() {
         // Contadores
-        let visitas = { total: 0, store: 0, yunysell: 0, parcerias: 0, };
-        let indicacoes = {  total: 0, store: 0, yunysell: 0, parcerias: 0, };
-        let retornos = {  total: 0, store: 0, yunysell: 0, parcerias: 0,  };
-        let propostas = {  total: 0, store: 0, yunysell: 0, parcerias: 0,  };
+        let visitas = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
+        let indicacoes = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
+        let retornos = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
+        let propostas = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
         
         dadosResumoFiltrados.forEach(item => {
             const tipo = (item[COL_TIPO] || '').toUpperCase();
@@ -2063,26 +1775,34 @@ setTimeout(atualizarYunySellControle, 3000);
             if (tipo.includes('VEZ')) {
                 visitas.total++;
                 if (diretoria.includes('STORE')) visitas.store++;
+                else if (diretoria.includes('HOMESPHERE')) visitas.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) visitas.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) visitas.parcerias++;
+                else if (diretoria.includes('DIRETORIA')) visitas.diretoria++;
             }
             else if (tipo.includes('INDI')) {
                 indicacoes.total++;
                 if (diretoria.includes('STORE')) indicacoes.store++;
+                else if (diretoria.includes('HOMESPHERE')) indicacoes.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) indicacoes.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) indicacoes.parcerias++;
+                else if (diretoria.includes('DIRETORIA')) indicacoes.diretoria++;
             }
             else if (tipo.includes('RETORNO')) {
                 retornos.total++;
                 if (diretoria.includes('STORE')) retornos.store++;
+                else if (diretoria.includes('HOMESPHERE')) retornos.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) retornos.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) retornos.parcerias++;
+                else if (diretoria.includes('DIRETORIA')) retornos.diretoria++;
             }
             else if (tipo.includes('PROPOSTA')) {
                 propostas.total++;
                 if (diretoria.includes('STORE')) propostas.store++;
+                else if (diretoria.includes('HOMESPHERE')) propostas.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) propostas.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) propostas.parcerias++;
+                else if (diretoria.includes('DIRETORIA')) propostas.diretoria++;
             }
         });
         
@@ -2090,8 +1810,10 @@ setTimeout(atualizarYunySellControle, 3000);
         function formatarDiretorias(metricas) {
             const partes = [];
             if (metricas.store > 0) partes.push(`Store: ${metricas.store}`);
+            if (metricas.homesphere > 0) partes.push(`Homesphere: ${metricas.homesphere}`);
             if (metricas.yunysell > 0) partes.push(`YunySell: ${metricas.yunysell}`);
             if (metricas.parcerias > 0) partes.push(`Parcerias: ${metricas.parcerias}`);
+            if (metricas.diretoria > 0) partes.push(`Diretoria: ${metricas.diretoria}`);
             return partes.join(' / ');
         }
         
@@ -2750,7 +2472,11 @@ function popularTabela(data) {
         }
     }
 
-    function inicializarGraficosOutubro() {
+    /* removed inicializarGraficosOutubro */
+function inicializarGraficosOutubro() { /* removed - section deleted */
+    return; 
+}
+
         const ctx1 = document.getElementById('chartDiretoriaOutubro').getContext('2d');
         if (ctx1) {
             new Chart(ctx1, {
@@ -2798,7 +2524,11 @@ function popularTabela(data) {
         }
     }
 
-    function inicializarGraficosSetembro() {
+    /* removed inicializarGraficosSetembro */
+function inicializarGraficosSetembro() { /* removed - section deleted */
+    return; 
+}
+
         const ctx1 = document.getElementById('chartDiretoriaSetembro').getContext('2d');
         if (ctx1) {
             new Chart(ctx1, {
@@ -2980,9 +2710,7 @@ function popularTabela(data) {
                 if (target === 'resumo') {
                     // A aba resumo agora é dinâmica, não precisa inicializar gráficos estáticos
                 }
-                if (target === 'resumo-mes') inicializarGraficosOutubro();
-                if (target === 'historico-mes') inicializarGraficosSetembro();
-                if (target === 'panorama-estoque') inicializarGraficosEstoque();
+                                if (target === 'panorama-estoque') inicializarGraficosEstoque();
                 if (target === 'controle-atendimentos') {
                     if(atendimentosPaginados.length > 0) {
                         inicializarGraficosAtendimentos(); 
@@ -3053,11 +2781,13 @@ function atualizarPerformanceDiretoriaSemana() {
         return;
     }
 
-    const diretorias = ['STORE',  'PARCERIAS', 'YUNY SELL', ];
+    const diretorias = ['STORE', 'HOMESPHERE', 'PARCERIAS', 'YUNY SELL', 'DIRETORIA'];
     const cores = {
         STORE: '#6366f1',
+        HOMESPHERE: '#10b981',
         PARCERIAS: '#f59e0b',
         'YUNY SELL': '#06b6d4',
+        DIRETORIA: '#8b5cf6'
     };
 
     const metricas = {};
