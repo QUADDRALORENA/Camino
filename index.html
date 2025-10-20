@@ -15,7 +15,9 @@ function atualizarPerformanceDiretoriaSemana() {
         return;
     }
 
-const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
+    // Lista de diretorias que queremos exibir (HOMESPHERE e DIRETORIA foram removidas)
+    const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
+
     const cores = {
         STORE: '#6366f1',
         HOMESPHERE: '#10b981',
@@ -24,17 +26,25 @@ const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
         DIRETORIA: '#8b5cf6'
     };
 
+    // inicializa estrutura de métricas somente para as diretorias acima
     const metricas = {};
     diretorias.forEach(dir => {
         metricas[dir] = { visitas: 0, indicacoes: 0, retornos: 0, total: 0 };
     });
 
+    // percorre os dados filtrados e acumula somente para as diretorias desejadas
     dadosResumoFiltrados.forEach(item => {
         const tipo = (item[COL_TIPO] || '').toUpperCase();
-        const dir = (item[COL_DIRETORIA] || '').toUpperCase();
-        const diretoria = diretorias.find(d => dir.includes(d)) || 'OUTROS';
+        const dirRaw = (item[COL_DIRETORIA] || '').toUpperCase().trim();
 
-        if (!metricas[diretoria]) return;
+        // Ignorar registros explicitamente de HOMESPHERE ou DIRETORIA
+        if (dirRaw.includes('HOMESPHERE') || dirRaw.includes('DIRETORIA')) {
+            return;
+        }
+
+        // encontra a diretoria na lista (procura substring)
+        const diretoria = diretorias.find(d => dirRaw.includes(d)) || null;
+        if (!diretoria) return; // não interessa (ex.: OUTROS)
 
         if (tipo.includes('VEZ')) metricas[diretoria].visitas++;
         else if (tipo.includes('INDI')) metricas[diretoria].indicacoes++;
@@ -46,13 +56,14 @@ const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
             metricas[diretoria].retornos;
     });
 
+    // monta os cards apenas para as diretorias na lista
     diretorias.forEach(dir => {
-        const data = metricas[dir];
+        const data = metricas[dir] || { visitas: 0, indicacoes: 0, retornos: 0, total: 0 };
         const card = document.createElement('div');
         card.className = 'timeline-card';
         card.innerHTML = `
-            <h4><i class="fas fa-circle" style="color:${cores[dir]}"></i> ${dir}</h4>
-            <h5>Performance da Periodo</h5>
+            <h4><i class="fas fa-circle" style="color:${cores[dir] || '#999'}"></i> ${dir}</h4>
+            <h5>Performance no Período</h5>
             <ul>
                 <li>Visitas: ${data.visitas}</li>
                 <li>Indicações: ${data.indicacoes}</li>
@@ -62,6 +73,12 @@ const diretorias = ['STORE', 'PARCERIAS', 'YUNY SELL'];
         `;
         container.appendChild(card);
     });
+
+    // Se quiser: mostrar mensagem se todos os totals forem zero
+    const totalGeral = Object.values(metricas).reduce((s, m) => s + (m.total || 0), 0);
+    if (totalGeral === 0) {
+        container.innerHTML = '<p class="warning-message">Nenhum dado relevante encontrado para as diretorias exibidas no período selecionado.</p>';
+    }
 }
 
 
