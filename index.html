@@ -23,7 +23,6 @@ function atualizarPerformanceDiretoriaSemana() {
         HOMESPHERE: '#10b981',
         PARCERIAS: '#f59e0b',
         'YUNY SELL': '#06b6d4',
-        DIRETORIA: '#8b5cf6'
     };
 
     // inicializa estrutura de métricas somente para as diretorias acima
@@ -2052,10 +2051,10 @@ setTimeout(atualizarYunySellControle, 3000);
     // Calcular todas as métricas do resumo - FUNÇÃO ATUALIZADA
     function calcularMetricasResumo() {
         // Contadores
-        let visitas = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
-        let indicacoes = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
-        let retornos = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
-        let propostas = { total: 0, store: 0, homesphere: 0, yunysell: 0, parcerias: 0, diretoria: 0 };
+        let visitas = { total: 0, store: 0, yunysell: 0, parcerias: 0, };
+        let indicacoes = {  total: 0, store: 0, yunysell: 0, parcerias: 0, };
+        let retornos = {  total: 0, store: 0, yunysell: 0, parcerias: 0,  };
+        let propostas = {  total: 0, store: 0, yunysell: 0, parcerias: 0,  };
         
         dadosResumoFiltrados.forEach(item => {
             const tipo = (item[COL_TIPO] || '').toUpperCase();
@@ -2064,34 +2063,26 @@ setTimeout(atualizarYunySellControle, 3000);
             if (tipo.includes('VEZ')) {
                 visitas.total++;
                 if (diretoria.includes('STORE')) visitas.store++;
-                else if (diretoria.includes('HOMESPHERE')) visitas.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) visitas.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) visitas.parcerias++;
-                else if (diretoria.includes('DIRETORIA')) visitas.diretoria++;
             }
             else if (tipo.includes('INDI')) {
                 indicacoes.total++;
                 if (diretoria.includes('STORE')) indicacoes.store++;
-                else if (diretoria.includes('HOMESPHERE')) indicacoes.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) indicacoes.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) indicacoes.parcerias++;
-                else if (diretoria.includes('DIRETORIA')) indicacoes.diretoria++;
             }
             else if (tipo.includes('RETORNO')) {
                 retornos.total++;
                 if (diretoria.includes('STORE')) retornos.store++;
-                else if (diretoria.includes('HOMESPHERE')) retornos.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) retornos.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) retornos.parcerias++;
-                else if (diretoria.includes('DIRETORIA')) retornos.diretoria++;
             }
             else if (tipo.includes('PROPOSTA')) {
                 propostas.total++;
                 if (diretoria.includes('STORE')) propostas.store++;
-                else if (diretoria.includes('HOMESPHERE')) propostas.homesphere++;
                 else if (diretoria.includes('YUNY SELL') || diretoria.includes('YUNYSELL')) propostas.yunysell++;
                 else if (diretoria.includes('PARCERIAS')) propostas.parcerias++;
-                else if (diretoria.includes('DIRETORIA')) propostas.diretoria++;
             }
         });
         
@@ -2099,10 +2090,8 @@ setTimeout(atualizarYunySellControle, 3000);
         function formatarDiretorias(metricas) {
             const partes = [];
             if (metricas.store > 0) partes.push(`Store: ${metricas.store}`);
-            if (metricas.homesphere > 0) partes.push(`Homesphere: ${metricas.homesphere}`);
             if (metricas.yunysell > 0) partes.push(`YunySell: ${metricas.yunysell}`);
             if (metricas.parcerias > 0) partes.push(`Parcerias: ${metricas.parcerias}`);
-            if (metricas.diretoria > 0) partes.push(`Diretoria: ${metricas.diretoria}`);
             return partes.join(' / ');
         }
         
@@ -3064,13 +3053,11 @@ function atualizarPerformanceDiretoriaSemana() {
         return;
     }
 
-    const diretorias = ['STORE', 'HOMESPHERE', 'PARCERIAS', 'YUNY SELL', 'DIRETORIA'];
+    const diretorias = ['STORE',  'PARCERIAS', 'YUNY SELL', ];
     const cores = {
         STORE: '#6366f1',
-        HOMESPHERE: '#10b981',
         PARCERIAS: '#f59e0b',
         'YUNY SELL': '#06b6d4',
-        DIRETORIA: '#8b5cf6'
     };
 
     const metricas = {};
