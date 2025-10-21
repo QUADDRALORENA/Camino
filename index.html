@@ -282,24 +282,19 @@
             margin-bottom: 30px;
         }
 
-    .timeline-container {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
+.timeline-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    padding-bottom: 10px;
     margin-bottom: 30px;
-    scroll-behavior: smooth;
 }
 
 .timeline-card {
-    flex: 0 0 350px; /* Largura fixa para os cards */
     background: white;
     border-radius: 12px;
     padding: 20px;
     box-shadow: var(--card-shadow);
 }
-
         .timeline-card h4 {
             font-size: 1rem;
             color: var(--primary);
