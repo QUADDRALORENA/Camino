@@ -282,15 +282,18 @@
             margin-bottom: 30px;
         }
 
-       .timeline-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    .timeline-container {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     gap: 20px;
+    padding-bottom: 10px;
     margin-bottom: 30px;
+    scroll-behavior: smooth;
 }
 
 .timeline-card {
-    width: 100%;
+    flex: 0 0 350px; /* Largura fixa para os cards */
     background: white;
     border-radius: 12px;
     padding: 20px;
